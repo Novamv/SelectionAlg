@@ -1,0 +1,6 @@
+add_subdirectory(EventTagSvc)
+add_subdirectory(SelectionAlg)
+add_subdirectory(MuonClassificationTool)
+add_subdirectory(SpalNeutronSelectionTool)
+add_subdirectory(IBDSelectionTool)
+# add_subdirectory(MyClassification)

@@ -1,0 +1,12 @@
+import Sniper
+Sniper.loadDll("libSpmtElecConfigSvc.so")
+Sniper.loadDll("libBufferMemMgr.so")
+Sniper.loadDll("libSelectionAlg.so")
+Sniper.loadDll("libSimEvent.so")
+Sniper.loadDll("libElecEvent.so")
+Sniper.loadDll("libCalibEvent.so")
+Sniper.loadDll("libRecEvent.so")
+Sniper.loadDll("libCLHEPDict.so")
+Sniper.loadDll("libRootIOTools.so")
+Sniper.loadDll("libEvtNavigator.so")
+Sniper.loadDll("libEDMUtil.so")

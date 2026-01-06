@@ -1,0 +1,4 @@
+PKG(EventTagSvc
+    DEPENDS
+    EvtNavigator
+)
