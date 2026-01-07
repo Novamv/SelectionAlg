@@ -204,6 +204,10 @@ bool SelectionAlg::initialize()
 
 	i_pIBD = m_tagsvc->getpTag("InverseBetaDecay");
 	i_dIBD = m_tagsvc->getdTag("InverseBetaDecay");
+	i_pBiPo214pair= m_tagsvc->getpTag("BiPo214Pair");
+	i_dBiPo214pair= m_tagsvc->getdTag("BiPo214Pair");
+
+
 
 
 
@@ -398,9 +402,10 @@ bool SelectionAlg::execute()
 
 	if(oecevt) {
 		m_myOECtag = oecevt->getTag();
-		if((m_myOECtag & i_pIBD)== i_pIBD) m_OECtag = "Prompt";
-        if((m_myOECtag & i_dIBD)== i_dIBD) m_OECtag="Delay";
-		//add BiPo tag
+		if((m_myOECtag & i_pIBD)== i_pIBD) m_OECtag = "PromptIBD";
+        if((m_myOECtag & i_dIBD)== i_dIBD) m_OECtag = "DelayIBD";
+		if((m_myOECtag & i_pBiPo214pair)== i_pBiPo214pair) m_OECtag = "PromptBiPo";
+		if((m_myOECtag & i_dBiPo214pair)== i_dBiPo214pair) m_OECtag = "DelayBiPo";
 	}
 
 	if(triggerevent)
@@ -470,7 +475,11 @@ bool SelectionAlg::execute()
 		// m_HitTime_mean = hTime->GetMean();
 		// m_HitTime_std = hTime->GetRMS();
 
-		if(m_Tag == "Prompt" || m_Tag == "Delay"){
+		bool myIBD = (m_Tag == "Prompt" || m_Tag == "Delay");
+		bool OecIBD = (m_OECtag == "PromptIBD" || m_OECtag == "DelayIBD");
+		bool OecBiPo = (m_OECtag == "PromptBiPo" || m_OECtag == "DelayBiPo");
+
+		if(myIBD || OecIBD || OecBiPo){
 			m_PmtIdCalib.insert(m_PmtIdCalib.end(), tempPmtIds.begin(), tempPmtIds.end());
 			m_HitTimeCalib.insert(m_HitTimeCalib.end(), tempHitTimes.begin(), tempHitTimes.end());
 			m_ChargeCalib.insert(m_ChargeCalib.end(), tempCharges.begin(), tempCharges.end());

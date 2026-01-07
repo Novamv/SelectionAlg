@@ -1,0 +1,151 @@
+**************************************************
+Welcome to SNiPER v2.1.0
+Running @ cca016 on Wed Jan  7 11:05:00 2026
+**************************************************
+{
+  "sniper": {
+    "LoadDlls": [ "libGeometry.so", "libBufferMemMgr.so", "libSpmtElecConfigSvc.so", "libEventTagSvc.so", "libSelectionAlg.so", "libMuonClassificationTool.so", "libSpalNeutronSelectionTool.so", "libIBDSelectionTool.so", "libRootIOSvc.so", "libRootIOTools.so", "libEDMUtil.so", "libGenEvent.so", "libSimEvent.so", "libCalibEvent.so", "libRecEvent.so", "libElecEvent.so", "libEvtNavigator.so", "libRootWriterLib.so", "libOECComJSONSvc.so", "libOECTagSvc.so" ],
+    "LogLevel": 3
+  },
+  "identifier": "TopTask/task",
+  "properties": {
+    "EvtMax": -1,
+    "LogLevel": 5
+  },
+  "services": [
+    {
+      "identifier": "BufferMemMgr/BufferMemMgr",
+      "properties": {
+        "StopTaskOpt": 0,
+        "TimeWindow": [ -0.01, 0.01 ]
+      }
+    },
+    {
+      "identifier": "SpmtElecConfigSvc/SpmtElecConfigSvc",
+      "properties": {
+        "ConfigFile": "$JUNOTOP/junosw/Examples/TestSpmtElecAlg/share/SpmtElecConfig.txt"
+      }
+    },
+    {
+      "identifier": "PMTParamSvc/PMTParamSvc",
+      "properties": {
+        "Construct_Center_PMTID": -1,
+        "DBType": "IDService",
+        "Distance_To_Center_PMT": -1,
+        "Path_CD_LPMT_Pos": "",
+        "Path_CD_LPMT_Type": "",
+        "Path_CD_SPMT_Pos": "",
+        "Path_CD_SPMT_Type": "",
+        "Path_WP_LPMT_Pos": "",
+        "Path_WP_LPMT_Type": "",
+        "Ranges_PMT_Constructed": [],
+        "Ranges_PMT_Enabled": []
+      }
+    },
+    {
+      "identifier": "EventTagSvc/EventTagSvc"
+    },
+    {
+      "identifier": "RootInputSvc/InputSvc",
+      "properties": {
+        "InputCorrelationFile": [ "/sps/juno/mlecocq/Data/Physics/RUN.9789.JUNODAQ.Physics.ds-2.global_trigger.20250830102924.314_J25.5.0.rtraw" ],
+        "InputFile": [ "/sps/juno/mlecocq/Data/Physics/RUN.9789.JUNODAQ.Physics.ds-2.global_trigger.20250830102924.314_J25.5.0.esd" ]
+      }
+    },
+    {
+      "identifier": "RootWriter/RootWriter",
+      "properties": {
+        "Output": { "Data": "RUN9789_IBD.root" }
+      }
+    },
+    {
+      "identifier": "OECComJSONSvc/OECComJSONSvc",
+      "properties": {
+        "OECComJSONFile": "",
+        "OECReadComJSONFrom": 0
+      }
+    },
+    {
+      "identifier": "OECTagSvc/OECTagSvc",
+      "properties": {
+        "TagRuleCheck": true
+      }
+    }
+  ],
+  "algorithms": [
+    {
+      "identifier": "SelectionAlg/alg_example",
+      "properties": {
+        "ClassifierNames": [],
+        "Filename": "RUN.9789.JUNODAQ.Physics.ds-2.global_trigger.20250830102924.314_J25.5.0.esd",
+        "enableElec": false,
+        "enableSim": false,
+        "interface": -99999,
+        "recEDMPath": "/Event/CdVertexRecOMILREC",
+        "saveHitInfo": true
+      },
+      "tools": [
+        {
+          "identifier": "MuonClassificationTool/MuonClassificationTool"
+        },
+        {
+          "identifier": "SpalNeutronSelectionTool/SpalNeutronSelectionTool",
+          "properties": {
+            "FiducialVolume": 17200,
+            "recEDMPath": "/Event/CdVertexRecOMILREC"
+          }
+        },
+        {
+          "identifier": "IBDSelectionTool/IBDSelectionTool",
+          "properties": {
+            "FiducialVolume": 17200,
+            "recEDMPath": "/Event/CdVertexRecOMILREC"
+          }
+        }
+      ]
+    }
+  ],
+  "subtasks": []
+}
+IDMapping Service is initializing!
+SNiPER:Unknown.printValues      INFO: NORMAL:0
+,CALIBRATION:1
+,SN:2
+,CD:1
+,WP:2
+,TT:3
+,TQ:0
+,WAVEFORM_FEATURE:1
+,FIRED_WAVEFORM:2
+,FULL_WAVEFORM:4
+,MUON:524288
+,MUONPRIMARY:262144
+,CONSECUTIVE:131072
+,ATMOFC:32768
+,ATMOPC:16384
+,LECUNKNOWN:8388608
+,HECUNDECIDED:1048576
+,DAQHECTIMEOUT:2097152
+,HECWFSCALED:128
+,STORAGE_STRATEGY_OFFSET:24
+,STORAGE_STRATEGY_MASK:4043309055
+SNiPER:Unknown.operator()       INFO: Using oec tag version 2
+##################################################################
+The source file was compiled on Jan  7 2026 at 11:01:23
+##################################################################
+ PMT Information 
+LPMT
+SPMT
+36
+Parent=0x1c31ce8Root=0x1c31ce8
+['/sps/juno/mlecocq/Data/Physics/RUN.9789.JUNODAQ.Physics.ds-2.global_trigger.20250830102924.314_J25.5.0.esd']
+RUN.9789.JUNODAQ.Physics.ds-2.global_trigger.20250830102924.314_J25.5.0.esd
+
+**************************************************
+Terminating @ cca016 on Wed Jan  7 11:05:11 2026
+SNiPER::Context Running Mode = { BASIC }
+SNiPER::Context Terminated Successfully
+
+real	0m11.035s
+user	0m4.753s
+sys	0m0.575s

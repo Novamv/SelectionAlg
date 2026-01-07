@@ -75,6 +75,8 @@ private :
   //OEC Tag list
   uint32_t i_pIBD; 
   uint32_t i_dIBD;
+  uint32_t i_pBiPo214pair;
+  uint32_t i_dBiPo214pair;
 
 
   std::vector<std::string> m_classifiernames;
