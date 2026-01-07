@@ -33,6 +33,7 @@ private:
 
     // Variables
     float pEnergy, dEnergy;
+    float pCharge, dCharge;
     TVector3 pVertex, dVertex;
     int DelayEntryOffset;
 

@@ -166,12 +166,14 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
 
     const auto vertex = m_recevt->getVertex(0);
     pEnergy = vertex->energy();
+    pCharge = vertex->peSum();
     pVertex.SetXYZ(vertex->x(), vertex->y(), vertex->z());
 
     bool energy_cut = pEnergy >= PromptEnergyCut[0] && pEnergy <= PromptEnergyCut[1];
+    bool charge_cut = pCharge >= PromptChargeCut[0] && pCharge <= PromptChargeCut[1];
     bool position_cut = pVertex.Mag() < FV_cut && !(pVertex.Perp() < 2000 && std::abs(pVertex.Z() < 15500));
 
-    if(energy_cut && position_cut){
+    if(energy_cut && position_cut && charge_cut){
         LogInfo << "Prompt IBD Candidate: " << std::endl;
         LogInfo << " - energy: " << pEnergy << " r: " << pVertex.Mag() << std::endl;
 
@@ -201,13 +203,15 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
             
             const auto avertex = dRecEvt->getVertex(0);
             dEnergy = avertex->energy();
+            dCharge = avertex->peSum();
             dVertex.SetXYZ(avertex->x(), avertex->y(), avertex->z());
             
             bool energy = dEnergy >= DelayEnergyCut[0] && dEnergy <= DelayEnergyCut[1];
+            bool charge = dCharge >= DelayChargeCut[0] && dCharge <= DelayChargeCut[1];
             bool distance = (pVertex - dVertex).Mag() < 1500;
             LogInfo << "Energy: " << dEnergy << " distance: " << (pVertex - dVertex).Mag() << std::endl; 
                         
-            if(dt*1e-3 > 5 && distance && energy && isIsolated(nav, dnav, m_oecevt, dOecEvt)){
+            if(dt*1e-3 > 5 && distance && energy && charge && isIsolated(nav, dnav, m_oecevt, dOecEvt)){
                 LogInfo << "Delay found!" << std::endl;
                 LogInfo << " - energy: " << dEnergy << " r: " << dVertex.Mag() << std::endl;
 

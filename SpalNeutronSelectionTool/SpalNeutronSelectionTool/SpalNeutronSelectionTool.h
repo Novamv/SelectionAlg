@@ -26,7 +26,8 @@ private:
     std::string recEDMPath;
     float FV_cut;
     float NeutronEnergyCut[2];
-    
+    float NeutronChargeCut[2];
+
     TVector3 vecNeutron;
 
 

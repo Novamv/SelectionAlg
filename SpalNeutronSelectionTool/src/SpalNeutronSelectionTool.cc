@@ -14,6 +14,7 @@ SpalNeutronSelectionTool::SpalNeutronSelectionTool(const std::string& name)
     declProp("FiducialVolume", FV_cut=17200); // Fiducial Volume cut (17.2 m default)
 
     NeutronEnergyCut[0] = 1.5; NeutronEnergyCut[1] = 20; // MeV // Could be a property
+    NeutronChargeCut[0] = 1500; NeutronChargeCut[1] = 30000; // PE
 }
 
 SpalNeutronSelectionTool::~SpalNeutronSelectionTool(){}
@@ -105,10 +106,12 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
     m_recevt = rechdr->event();
     
     float recenergy = 0.0;
+    float reccharge = 0.0;
     const auto& vertices = m_recevt->vertices();
 
     for(auto vertex: vertices) {
         recenergy = vertex->energy();
+        reccharge = vertex->peSum();
         vecNeutron.SetXYZ(vertex->x(), vertex->y(), vertex->z());
     }
 
@@ -119,7 +122,9 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
     // ------- Neutron selection -------
     bool position = vecNeutron.Mag() < FV_cut;
     bool energy = recenergy >= NeutronEnergyCut[0] && recenergy <= NeutronEnergyCut[1];
-    if(position && energy){
+    bool charge = reccharge >= NeutronChargeCut[0] && reccharge <= NeutronChargeCut[1];
+    
+    if(position && energy && charge){
         m_eventTagSvc->addTag(nav, "Neutron");
         return true;
     }
