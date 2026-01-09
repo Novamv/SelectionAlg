@@ -173,7 +173,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
     bool charge_cut = pCharge >= PromptChargeCut[0] && pCharge <= PromptChargeCut[1];
     bool position_cut = pVertex.Mag() < FV_cut && !(pVertex.Perp() < 2000 && std::abs(pVertex.Z() < 15500));
 
-    if(energy_cut && position_cut && charge_cut){
+    if(energy_cut && position_cut /*&& charge_cut*/){
         LogInfo << "Prompt IBD Candidate: " << std::endl;
         LogInfo << " - energy: " << pEnergy << " r: " << pVertex.Mag() << std::endl;
 
