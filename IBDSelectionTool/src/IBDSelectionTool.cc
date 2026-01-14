@@ -196,7 +196,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
             // Reco
             auto dRecHdr = JM::getHeaderObject<JM::CdVertexRecHeader>(dnav, recEDMPath);
             if(!dRecHdr){
-                LogInfo << "Info: No Rec header" << std::endl;
+                LogInfo << "No Rec header" << std::endl;
                 continue;
             }
             JM::CdVertexRecEvt* dRecEvt = dRecHdr->event();
