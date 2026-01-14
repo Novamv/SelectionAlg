@@ -124,7 +124,7 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
     bool energy = recenergy >= NeutronEnergyCut[0] && recenergy <= NeutronEnergyCut[1];
     bool charge = reccharge >= NeutronChargeCut[0] && reccharge <= NeutronChargeCut[1];
     
-    if(position && energy && charge){
+    if(position && energy /*&& charge*/){
         m_eventTagSvc->addTag(nav, "Neutron");
         return true;
     }

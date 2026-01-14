@@ -209,6 +209,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
             ++it;
         }
         
+
         if(!isVetoed(nav, oecevt)){
             LogInfo << "Cd Muon with charge = " << charge << " PE" << std::endl;
             m_eventTagSvc->addTag(nav, "CDMuon");

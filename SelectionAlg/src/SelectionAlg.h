@@ -31,11 +31,13 @@
 class RecGeomSvc; 
 class CdGeom;
 
-struct CalibValues {
-      double E1;
-      double E2;
-      double E3;
+enum class SkipReason {
+  None,
+  StartOfFile,
+  BigGap,
+  MissingHeader
 };
+
 
 class SelectionAlg : public AlgBase
 {
@@ -83,9 +85,16 @@ private :
 
   // Some useful variables
   TTimeStamp FirstTime, theTime, PreviousTime, tLastMuon;
+  TTimeStamp prevCDTime;
+  TTimeStamp prevWPTime;
   int m_DelayEvt;
+
+  // skipping
+  SkipReason skipReason = SkipReason::None;
+  TTimeStamp skipStartTime;
   double dt_skip;
-  float runskiptime = 5; //ms
+  double dtCD = 0.0;
+  double dtWP = 0.0;
 
   // ------------------ TOF ------------------
   TOFCalculator m_TOF;

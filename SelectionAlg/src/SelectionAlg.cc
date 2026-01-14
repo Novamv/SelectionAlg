@@ -260,7 +260,7 @@ bool SelectionAlg::execute()
 	
 	LogInfo << "Buffer Size " << m_buf->size() << std::endl;
 	auto nav = m_buf->curEvt();
-	// gDirectory->pwd();
+	
 	const auto& paths = nav->getPath();
 	const auto& refs = nav->getRef();
 	
@@ -268,60 +268,132 @@ bool SelectionAlg::execute()
 	LogInfo << "Start to Explore SmartRef: " << std::endl;
 	LogInfo << "Size of paths: " << paths.size() << std::endl;
 	LogInfo << "Size of refs: " << refs.size() << std::endl;
-
+	
 	for (size_t i = 0; i < paths.size(); ++i) {
 		LogInfo << refs[i]<<" -> ref: " << std::endl;
 		const std::string& path = paths[i];
 		JM::SmartRef* ref = refs[i];
 		JM::EventObject* evtobj = ref->GetObject();
-	
+		
 		LogInfo << " path: " << path
-			<< " ref->entry(): " << ref->entry()
-			<< " evtobj: " << evtobj;
-	
+		<< " ref->entry(): " << ref->entry()
+		<< " evtobj: " << evtobj;
+		
 		if (path=="/Event/Sim") {
 			auto hdr = dynamic_cast<JM::SimHeader*>(evtobj);
 			LogInfo <<i<<" SimHeader: " << hdr;
 		}
 		LogInfo << std::endl;
 	}
-	
+
 	clearAllTrees(); //Clearing all trees variables
-
-// ================================================
-// =============  Run Classification  =============
-// ================================================
 	
+// ================================================
+// =============  Inititalization  =============
+// ================================================
 
-	
-	if(m_iEvt == 0) FirstTime = nav->TimeStamp(); 
 	theTime = nav->TimeStamp();
-	
-	double global_dtime = (theTime.GetSec() - FirstTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - FirstTime.GetNanoSec());
-	LogInfo <<  "Global Time: " << global_dtime << std::endl;
-	if(global_dtime < 5e6){ //skip the first 5 ms of a job
+
+	if(m_iEvt == 0) {
 		PreviousTime = theTime;
-		return true;
+		skipReason = SkipReason::StartOfFile;
+		skipStartTime = theTime;
+		FirstTime = theTime;
+		dtCD = 0;
+		dtWP = 0;
 	}
+
+	// =============  Fast skip  =============
+	if(skipReason != SkipReason::None){
+		
+		dt_skip = (theTime.GetSec() - skipStartTime.GetSec()) * 1000000000ULL + (theTime.GetNanoSec() - skipStartTime.GetNanoSec());
+
+		bool skip1 = (skipReason == SkipReason::StartOfFile || skipReason == SkipReason::BigGap) && dt_skip < 1.2e9; //1.2 s skip if Start of file of big gap
+		bool skip2 = skipReason == SkipReason::MissingHeader && dt_skip < 5e6; // 5 ms skip if no headers
+
+		if(skip1 || skip2){
+			PreviousTime = theTime;
+			return true;
+		}
+
+		skipReason = SkipReason::None;
+	}
+
+	// =============  Compute dt  =============
+
+	double globalTime = (theTime.GetSec() - FirstTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - FirstTime.GetNanoSec());
 
 	uint64_t dt = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
 	double dtLastMuon = (theTime.GetSec() - tLastMuon.GetSec())*1000000000ULL + (theTime.GetNanoSec() - tLastMuon.GetNanoSec());
-	
-	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
+	LogInfo << "Global time: " << globalTime << std::endl;
+
+
+	
+	// =============  Check	for missing headers  =============
+	
+	auto calibheaderWP = JM::getHeaderObject<JM::WpCalibHeader>(nav);
+	auto calibheaderLPMT = JM::getHeaderObject<JM::CdLpmtCalibHeader>(nav);
+	auto recheader = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
+	
+	if(!recheader && !calibheaderLPMT && !calibheaderWP){
+		skipReason = SkipReason::MissingHeader;
+		skipStartTime = theTime;
+		PreviousTime = theTime;
+		LogInfo << "New skip reason: Missing Header" << std::endl;
+		return true;
+	}
+	
+	// =============  Check	for big gaps  =============
+	
+	if(calibheaderLPMT){
+		if(dtCD == 0) dtCD = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
+		else dtCD = (theTime.GetSec() - prevCDTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - prevCDTime.GetNanoSec());
+		
+		prevCDTime = theTime;
+		LogInfo << "dtCD: " << dtCD << std::endl;
+
+		if(dtCD > 50e6) {
+			skipReason = SkipReason::BigGap;
+			skipStartTime = theTime;
+			LogInfo << "New skip reason: CD gap > 50ms" << std::endl;
+			return true;
+		}
+	}
+	if(calibheaderWP){
+		if(dtWP == 0) dtWP = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
+		else dtWP = (theTime.GetSec() - prevWPTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - prevWPTime.GetNanoSec());
+
+		prevWPTime = theTime;
+		LogInfo << "dtWP: " << dtWP << std::endl;
+		
+		if(dtWP > 70e6) {
+			skipReason = SkipReason::BigGap;
+			skipStartTime = theTime;
+			LogInfo << "New skip reason: WP gap > 50ms" << std::endl;
+			return true;
+		}
+	}
+	
+	// =============  Runtime counting  =============
+	
 	runtime += dt;
 	if(dtLastMuon > 5e6){
 		effruntime += dt;
 	}
-
+	
 	PreviousTime = theTime;
-
+	
 	LogInfo << "Run Time: " << runtime << std::endl;
 	LogInfo << "Effective Run Time: " << effruntime << std::endl;
 	
 	
-	// Run classifier 
-	
+// ================================================
+// =============  Run Classification  =============
+// ================================================
+
+	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
+
 	if(m_iEvt == m_DelayEvt) m_Tag = m_eventTagsvc->getTag(nav);
 	else if(dtLastMuon > 50e3 && m_MuClassifier->isMuon(nav)){ //50 us dead time
 		tLastMuon = theTime;
@@ -339,11 +411,12 @@ bool SelectionAlg::execute()
 		m_DelayEvt = m_iEvt + m_IBDClassifier->getDelayOffset();
 		nIBD++;
 	}
-	
+		
 
+	LogInfo << "Current Tag: " << m_Tag << std::endl;
 	if(m_Tag == "") return true;
 
-	nav = m_buf->curEvt();
+	// nav = m_buf->curEvt(); // in case classification messes up the nav (shouldn't)
 
 // ================================================
 // ========  Fill Trees for tagged events  ========
@@ -360,7 +433,7 @@ bool SelectionAlg::execute()
 		LogInfo << "SimEvent Hits: " << simevent->getCDHitsVec().size() << std::endl;
 	}
 
-	auto recheader = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
+	// auto recheader = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
 	if (recheader) {
 	  recevent = recheader->event();
 	  LogInfo << "RecEvent Read in: " << recevent << std::endl;
@@ -370,7 +443,7 @@ bool SelectionAlg::execute()
 		trackrecevt = trackheader->event();
 		LogInfo << "TrackRecEvt Read in: " << trackrecevt << std::endl;
 	}
-	auto calibheaderLPMT = JM::getHeaderObject<JM::CdLpmtCalibHeader>(nav);
+	// auto calibheaderLPMT = JM::getHeaderObject<JM::CdLpmtCalibHeader>(nav);
 	if (calibheaderLPMT) {
 	  calibeventLPMT = calibheaderLPMT->event();
 	  LogInfo << "CalibEventLPMT Read in: " << calibeventLPMT << std::endl;
@@ -380,7 +453,7 @@ bool SelectionAlg::execute()
 	  calibeventSPMT = calibheaderSPMT->event();
 	  LogInfo << "CalibEventSPMT Read in: " << calibeventSPMT << std::endl;
 	}
-	auto calibheaderWP = JM::getHeaderObject<JM::WpCalibHeader>(nav);
+	// auto calibheaderWP = JM::getHeaderObject<JM::WpCalibHeader>(nav);
 	if (calibheaderWP) {
 	  calibeventWP = calibheaderWP->event();
 	  LogInfo << "CalibEventWP Read in: " << calibeventWP << std::endl;
@@ -396,7 +469,6 @@ bool SelectionAlg::execute()
 		oecevt = dynamic_cast<JM::OecEvt*>(OEChdr->event("JM::OecEvt"));
 		LogInfo <<"OEC Event Read in: " << oecevt <<std::endl;
 	}
-
 
 	// ---------------------- Set all trees variables ----------------------
 
@@ -472,6 +544,10 @@ bool SelectionAlg::execute()
 		m_ChargeTotLPMT = ChargeTot;
 		m_HitTime_mean = sum/n;
 		m_HitTime_std = std::sqrt((sum2 - sum*sum/n) / (n-1));
+
+		if(m_Tag == "Neutron" && m_HitTime_std < 275){
+			m_Tag = "SpalNeutron";
+		}
 		// m_HitTime_mean = hTime->GetMean();
 		// m_HitTime_std = hTime->GetRMS();
 
@@ -606,7 +682,9 @@ bool SelectionAlg::execute()
 	}
 
 	// if(calibeventLPMT || calibeventSPMT || calibeventWP || oecevt) //If there is a trigger fill all trees
+
 	if(m_Tag!="" || m_OECtag != ""){
+		LogInfo << "Filling event tree" << std::endl;
 		m_ntuple1->Fill();
 	}
 
@@ -630,7 +708,6 @@ bool SelectionAlg::Book_tree()
 	m_ntuple2->Branch("nIBD", &nIBD);
 	
 	
-	//Calib
 	m_ntuple1 = svc->bookTree(*m_par,"Data/event", "Event Level Tree");
 	m_ntuple1->Branch("Filename", &m_fname);
 	m_ntuple1->Branch("EntryNb", &m_iEvt, "EntryNb/I");
