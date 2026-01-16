@@ -86,6 +86,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
     // Check before Prompt
     LogInfo << "Info: Checking Isolation Before Prompt" << std::endl;
     for(JM::NavBuffer::Iterator it = pit - 1; it != m_buf->begin(); --it) {
+
         auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
         JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
 
@@ -119,7 +120,11 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
     // Check after delay
     for(JM::NavBuffer::Iterator it = dit + 1; it != m_buf->end(); ++it) {
         auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
+        if(!oechdr) continue;
         JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
+        if(!oecevt){
+            LogInfo << "Could not load OecEvt" << std::endl;
+        }
         const TTimeStamp& time = oecevt->getTime();
         double dt = (time.GetSec() - dtime.GetSec())*1000000000ULL + (time.GetNanoSec() - dtime.GetNanoSec());
 
