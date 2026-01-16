@@ -88,7 +88,12 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
     for(JM::NavBuffer::Iterator it = pit - 1; it != m_buf->begin(); --it) {
 
         auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
+        if(!oechdr) continue;
         JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
+        if(!oecevt){
+            LogInfo << "Enable to load OEC Event" << std::endl;
+            continue;
+        }
 
         const TTimeStamp& time = oecevt->getTime();
         double dt = (ptime.GetSec() - time.GetSec())*1000000000ULL + (ptime.GetNanoSec() - time.GetNanoSec());
