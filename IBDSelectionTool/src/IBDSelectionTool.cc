@@ -85,63 +85,70 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
 
     // Check before Prompt
     LogInfo << "Info: Checking Isolation Before Prompt" << std::endl;
-    for(JM::NavBuffer::Iterator it = pit - 1; it != m_buf->begin(); --it) {
 
-        auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-        if(!oechdr) continue;
-        JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
-        if(!oecevt){
-            LogInfo << "Enable to load OEC Event" << std::endl;
-            continue;
+    if(pit != m_buf->begin()){
+        for(JM::NavBuffer::Iterator it = pit - 1; it != m_buf->begin(); --it) {
+    
+            auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
+            if(!oechdr) continue;
+            JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
+            if(!oecevt){
+                LogInfo << "Enable to load OEC Event" << std::endl;
+                continue;
+            }
+    
+            const TTimeStamp& time = oecevt->getTime();
+            double dt = (ptime.GetSec() - time.GetSec())*1000000000ULL + (ptime.GetNanoSec() - time.GetNanoSec());
+    
+            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
+            if(!rechdr) continue;
+            JM::CdVertexRecEvt* recevt = rechdr->event();
+    
+            const auto& vertex = recevt->getVertex(0);
+            float energy = vertex->energy();
+    
+            if (dt*1e-6 > 1) break;
+            else if(energy > DelayEnergyCut[0]) return false;
         }
-
-        const TTimeStamp& time = oecevt->getTime();
-        double dt = (ptime.GetSec() - time.GetSec())*1000000000ULL + (ptime.GetNanoSec() - time.GetNanoSec());
-
-        auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
-        if(!rechdr) continue;
-        JM::CdVertexRecEvt* recevt = rechdr->event();
-
-        const auto& vertex = recevt->getVertex(0);
-        float energy = vertex->energy();
-
-        if (dt*1e-6 > 1) break;
-        else if(energy > DelayEnergyCut[0]) return false;
     }
 
     // Check between prompt and delay
-    for(JM::NavBuffer::Iterator it = pit + 1; it != m_buf->end(); ++it) {
-        auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
-        if(!rechdr) continue;
-        JM::CdVertexRecEvt* recevt = rechdr->event();
-
-        const auto& vertex = recevt->getVertex(0);
-        float energy = vertex->energy();
-
-        if (it == dit) break;
-        else if(energy > DelayEnergyCut[0]) return false;
+    if(pit != m_buf->end()){
+        for(JM::NavBuffer::Iterator it = pit + 1; it != m_buf->end(); ++it) {
+            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
+            if(!rechdr) continue;
+            JM::CdVertexRecEvt* recevt = rechdr->event();
+    
+            const auto& vertex = recevt->getVertex(0);
+            float energy = vertex->energy();
+    
+            if (it == dit) break;
+            else if(energy > DelayEnergyCut[0]) return false;
+        }
     }
 
     // Check after delay
-    for(JM::NavBuffer::Iterator it = dit + 1; it != m_buf->end(); ++it) {
-        auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-        if(!oechdr) continue;
-        JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
-        if(!oecevt){
-            LogInfo << "Could not load OecEvt" << std::endl;
+    if(dit != m_buf->end()){
+        for(JM::NavBuffer::Iterator it = dit + 1; it != m_buf->end(); ++it) {
+            auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
+            if(!oechdr) continue;
+            JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
+            if(!oecevt){
+                LogInfo << "Could not load OecEvt" << std::endl;
+            }
+            const TTimeStamp& time = oecevt->getTime();
+            double dt = (time.GetSec() - dtime.GetSec())*1000000000ULL + (time.GetNanoSec() - dtime.GetNanoSec());
+    
+            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
+            if(!rechdr) continue;
+            JM::CdVertexRecEvt* recevt = rechdr->event();
+    
+            const auto& vertex = recevt->getVertex(0);
+            float energy = vertex->energy();
+    
+            if (dt*1e-6 > 1) break;
+            else if(energy > DelayEnergyCut[0]) return false;
         }
-        const TTimeStamp& time = oecevt->getTime();
-        double dt = (time.GetSec() - dtime.GetSec())*1000000000ULL + (time.GetNanoSec() - dtime.GetNanoSec());
-
-        auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
-        if(!rechdr) continue;
-        JM::CdVertexRecEvt* recevt = rechdr->event();
-
-        const auto& vertex = recevt->getVertex(0);
-        float energy = vertex->energy();
-
-        if (dt*1e-6 > 1) break;
-        else if(energy > DelayEnergyCut[0]) return false;
     }
 
     return true;
