@@ -519,7 +519,8 @@ bool SelectionAlg::execute()
 		// TH1F* hTime = new TH1F("hTime", "hTime", 100, 0, 1000);
 		const auto& chhlistLPMT = calibheaderLPMT->event()->calibPMTCol();
 		float sum = 0, sum2 = 0;
-		int n = 0;
+		float nhit_sum = 0, nhit_sum2 = 0;
+		int n = 0, nhit = 0;
 		for (auto chit = chhlistLPMT.begin(); chit!=chhlistLPMT.end(); ++chit){
 			auto calib = *chit;
 			unsigned int pmtId = calib->pmtId();
@@ -527,6 +528,10 @@ bool SelectionAlg::execute()
 			int TruePM=CdID::module(id);
 			m_NbHitLPMTCalib+=calib->size();
 
+			//for flasher cut
+			nhit++;
+			nhit_sum2 += calib->size() * calib->size();
+			
 			for(unsigned int j=0;j<calib->size();j++){
 				tempPmtIds.push_back(TruePM);
 				tempCharges.push_back(calib->charge(j));
@@ -544,6 +549,11 @@ bool SelectionAlg::execute()
 		m_ChargeTotLPMT = ChargeTot;
 		m_HitTime_mean = sum/n;
 		m_HitTime_std = std::sqrt((sum2 - sum*sum/n) / (n-1));
+
+		float nhit_std = std::sqrt((nhit_sum2 - m_NbHitLPMTCalib*m_NbHitLPMTCalib/nhit) / (nhit - 1));
+
+		bool flasher = std::pow((nhit_std - 0.55)/0.45, 2) + std::pow((m_HitTime_std - 170)/80, 2) >= 1;
+		if(flasher) return true;
 
 		if(m_Tag == "Neutron" && m_HitTime_std < 275){
 			m_Tag = "SpalNeutron";
