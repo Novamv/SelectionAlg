@@ -394,7 +394,10 @@ bool SelectionAlg::execute()
 
 	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
-	if(m_iEvt == m_DelayEvt) m_Tag = m_eventTagsvc->getTag(nav);
+	if(m_iEvt == m_DelayEvt) {
+		LogInfo << "Filling correponding delay event" << std::endl;
+		m_Tag = m_eventTagsvc->getTag(nav);
+	}
 	else if(dtLastMuon > 50e3 && m_MuClassifier->isMuon(nav)){ //50 us dead time
 		tLastMuon = theTime;
 		m_Tag = m_eventTagsvc->getTag(nav);
@@ -565,7 +568,7 @@ bool SelectionAlg::execute()
 		bool OecIBD = (m_OECtag == "PromptIBD" || m_OECtag == "DelayIBD");
 		bool OecBiPo = (m_OECtag == "PromptBiPo" || m_OECtag == "DelayBiPo");
 
-		if(myIBD || OecIBD || OecBiPo){
+		if(myIBD || OecBiPo){
 			m_PmtIdCalib.insert(m_PmtIdCalib.end(), tempPmtIds.begin(), tempPmtIds.end());
 			m_HitTimeCalib.insert(m_HitTimeCalib.end(), tempHitTimes.begin(), tempHitTimes.end());
 			m_ChargeCalib.insert(m_ChargeCalib.end(), tempCharges.begin(), tempCharges.end());

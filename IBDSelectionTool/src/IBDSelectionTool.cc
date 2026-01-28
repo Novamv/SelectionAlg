@@ -77,6 +77,10 @@ bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt, JM::EvtNavigator* munav) {
 
 bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav, JM::OecEvt* pOecEvt, JM::OecEvt* dOecEvt){
 
+    JM::EvtNavigator* lastMuNav = m_eventTagSvc->getLastMuNav();
+
+    LogInfo << "Prompt nav " << pnav << " Delay Nav " << dnav << std::endl;
+
     JM::NavBuffer::Iterator pit = m_buf->find(pnav);
     JM::NavBuffer::Iterator dit = m_buf->find(dnav);
 
@@ -84,52 +88,74 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
     const TTimeStamp& dtime = dOecEvt->getTime();
 
     // Check before Prompt
-    LogInfo << "Info: Checking Isolation Before Prompt" << std::endl;
-
     if(pit != m_buf->begin()){
+        LogInfo << "Checking Isolation Before Prompt" << std::endl;
         for(JM::NavBuffer::Iterator it = pit - 1; it != m_buf->begin(); --it) {
     
             auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-            if(!oechdr) continue;
+            if(!oechdr) {
+                LogInfo << "No Oec Header" << std::endl;
+                continue;
+            }
             JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
             if(!oecevt){
-                LogInfo << "Enable to load OEC Event" << std::endl;
+                LogInfo << "Unable to load OEC Event" << std::endl;
                 continue;
             }
     
             const TTimeStamp& time = oecevt->getTime();
             double dt = (ptime.GetSec() - time.GetSec())*1000000000ULL + (ptime.GetNanoSec() - time.GetNanoSec());
     
-            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
-            if(!rechdr) continue;
+            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
+            if(!rechdr) {
+                LogInfo << "No Rec Header" << std::endl;
+                continue;
+            }
             JM::CdVertexRecEvt* recevt = rechdr->event();
     
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
     
+            LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
+            bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
+
             if (dt*1e-6 > 1) break;
-            else if(energy > DelayEnergyCut[0]) return false;
+            else if(inEnergyRange && !isVetoed(oecevt, lastMuNav)) {
+                LogInfo << "Multiplicity before!" << std::endl;
+                return false;
+            }
         }
     }
 
     // Check between prompt and delay
-    if(pit != m_buf->end()){
-        for(JM::NavBuffer::Iterator it = pit + 1; it != m_buf->end(); ++it) {
-            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
-            if(!rechdr) continue;
-            JM::CdVertexRecEvt* recevt = rechdr->event();
-    
-            const auto& vertex = recevt->getVertex(0);
-            float energy = vertex->energy();
-    
-            if (it == dit) break;
-            else if(energy > DelayEnergyCut[0]) return false;
+    LogInfo << "Checking Isolation Between Prompt & Delay" << std::endl;
+    for(JM::NavBuffer::Iterator it = pit + 1; it != m_buf->end(); it++) {
+        
+        if (it == dit) break; //Break if reached delay iterator
+
+        auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
+        if(!rechdr){
+            LogInfo << "No Rec Header" << std::endl;
+            continue;
+        }
+
+        JM::CdVertexRecEvt* recevt = rechdr->event();
+        const auto& vertex = recevt->getVertex(0);
+        float energy = vertex->energy();
+        
+        LogInfo << "Energy: " << energy << std::endl;
+        bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
+        
+        if(inEnergyRange){
+            LogInfo << "Multiplicity in between!" << std::endl;
+            return false;
         }
     }
 
     // Check after delay
+    LogInfo << "Checking After Delay" << std::endl;
     if(dit != m_buf->end()){
-        for(JM::NavBuffer::Iterator it = dit + 1; it != m_buf->end(); ++it) {
+        for(JM::NavBuffer::Iterator it = dit + 1; it != m_buf->end(); it++) {
             auto oechdr = JM::getHeaderObject<JM::OecHeader>(it->get());
             if(!oechdr) continue;
             JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
@@ -139,15 +165,21 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             const TTimeStamp& time = oecevt->getTime();
             double dt = (time.GetSec() - dtime.GetSec())*1000000000ULL + (time.GetNanoSec() - dtime.GetNanoSec());
     
-            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get());
+            auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
             if(!rechdr) continue;
             JM::CdVertexRecEvt* recevt = rechdr->event();
     
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
-    
+
+            LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
+            bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
+            
             if (dt*1e-6 > 1) break;
-            else if(energy > DelayEnergyCut[0]) return false;
+            else if(inEnergyRange && !isVetoed(oecevt, lastMuNav)){
+                LogInfo << "Multiplicity after!" << std::endl;
+                return false;
+            }
         }
     }
 
@@ -191,7 +223,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
     bool position_cut = pVertex.Mag() < FV_cut && !(pVertex.Perp() < 2000 && std::abs(pVertex.Z() < 15500));
 
     if(energy_cut && position_cut /*&& charge_cut*/){
-        LogInfo << "Prompt IBD Candidate: " << std::endl;
+        LogInfo << "Prompt IBD Candidate: " << nav << std::endl;
         LogInfo << " - energy: " << pEnergy << " r: " << pVertex.Mag() << std::endl;
 
         JM::NavBuffer::Iterator navit = m_buf->find(nav);
@@ -206,7 +238,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
 
             double dt = (dtime.GetSec() - ptime.GetSec())*1000000000ULL + (dtime.GetNanoSec() - ptime.GetNanoSec());
             
-            LogInfo << "dtime prompt/delay candidate: " << dt*1e-6 << " ms" << std::endl;
+            LogInfo << "dtime prompt/delay candidate: " << dnav << " dtime: " << dt*1e-6 << " ms" << std::endl;
             if(dt*1e-6 > 1) return false; // if dt > 1ms no delay
             offset++;
             
@@ -226,9 +258,9 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
             bool energy = dEnergy >= DelayEnergyCut[0] && dEnergy <= DelayEnergyCut[1];
             bool charge = dCharge >= DelayChargeCut[0] && dCharge <= DelayChargeCut[1];
             bool distance = (pVertex - dVertex).Mag() < 1500;
-            LogInfo << "Energy: " << dEnergy << " distance: " << (pVertex - dVertex).Mag() << std::endl; 
+            LogInfo << "Energy: " << dEnergy << " Charge: " << dCharge << " r: " << dVertex.Mag() << " Distance: " << (pVertex - dVertex).Mag() << std::endl; 
                         
-            if(dt*1e-3 > 5 && distance && energy && charge && isIsolated(nav, dnav, m_oecevt, dOecEvt)){
+            if(dt*1e-3 > 5 && distance && energy /*&& charge*/ && isIsolated(nav, dnav, m_oecevt, dOecEvt)){
                 LogInfo << "Delay found!" << std::endl;
                 LogInfo << " - energy: " << dEnergy << " r: " << dVertex.Mag() << std::endl;
 
@@ -236,6 +268,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
                 m_eventTagSvc->addTag(dnav, "Delay");
 
                 DelayEntryOffset = offset;
+                LogInfo << "Delay Entry Offset: " << DelayEntryOffset << std::endl;
 
                 return true;
             }
