@@ -24,6 +24,7 @@ class MuonClassificationTool: public ToolBase /*, public IMyClassificationTool *
 
         EventTagSvc* m_eventTagSvc;
 
+        // Cuts are taken from group C technote
         float WPMuonChargeCut = 700; //PE
         float CDMuonChargeCut = 30000; //PE
 

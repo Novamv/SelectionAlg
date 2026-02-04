@@ -138,7 +138,6 @@ private :
   std::vector<double> m_ChargeCalib;
   
 
-
   TTree *m_ntuple2; // General info of the event
   double runtime = 0.0;
   double effruntime = 0.0;

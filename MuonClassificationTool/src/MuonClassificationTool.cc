@@ -8,7 +8,8 @@ DECLARE_TOOL(MuonClassificationTool);
 MuonClassificationTool::MuonClassificationTool(const std::string& name)
     : ToolBase(name), m_buf(NULL), m_calibevt(NULL), m_wpcalibevt(NULL)
 {
-    // can add properties for veto cut
+    declProp("WPMuonCut", WPMuonChargeCut);
+    declProp("CDMuonCut", CDMuonChargeCut);
 }
 MuonClassificationTool::~MuonClassificationTool(){
 }

@@ -208,9 +208,6 @@ bool SelectionAlg::initialize()
 	i_dBiPo214pair= m_tagsvc->getdTag("BiPo214Pair");
 
 
-
-
-
 	m_fname = filename;
 
 	Book_tree();
@@ -483,6 +480,10 @@ bool SelectionAlg::execute()
 		if((m_myOECtag & i_dBiPo214pair)== i_dBiPo214pair) m_OECtag = "DelayBiPo";
 	}
 
+	bool myIBD = (m_Tag == "Prompt" || m_Tag == "Delay");
+	bool OecIBD = (m_OECtag == "PromptIBD" || m_OECtag == "DelayIBD");
+	bool OecBiPo = (m_OECtag == "PromptBiPo" || m_OECtag == "DelayBiPo");
+
 	if(triggerevent)
 	{
 	    const auto& type = triggerevent->triggerType();
@@ -555,6 +556,7 @@ bool SelectionAlg::execute()
 
 		float nhit_std = std::sqrt((nhit_sum2 - m_NbHitLPMTCalib*m_NbHitLPMTCalib/nhit) / (nhit - 1));
 
+		// If the event is a flasher, skip the event
 		bool flasher = std::pow((nhit_std - 0.55)/0.45, 2) + std::pow((m_HitTime_std - 170)/80, 2) >= 1;
 		if(flasher) return true;
 
@@ -564,11 +566,8 @@ bool SelectionAlg::execute()
 		// m_HitTime_mean = hTime->GetMean();
 		// m_HitTime_std = hTime->GetRMS();
 
-		bool myIBD = (m_Tag == "Prompt" || m_Tag == "Delay");
-		bool OecIBD = (m_OECtag == "PromptIBD" || m_OECtag == "DelayIBD");
-		bool OecBiPo = (m_OECtag == "PromptBiPo" || m_OECtag == "DelayBiPo");
-
-		if(myIBD || OecBiPo){
+		// Fill Hit level information only for IBD tagged events
+		if(myIBD){
 			m_PmtIdCalib.insert(m_PmtIdCalib.end(), tempPmtIds.begin(), tempPmtIds.end());
 			m_HitTimeCalib.insert(m_HitTimeCalib.end(), tempHitTimes.begin(), tempHitTimes.end());
 			m_ChargeCalib.insert(m_ChargeCalib.end(), tempCharges.begin(), tempCharges.end());
@@ -594,18 +593,15 @@ bool SelectionAlg::execute()
 			m_NbHitSPMTCalib+=calibSPMT->size();
 			for(unsigned int j=0;j<calibSPMT->size();j++)
 			{
-				m_PmtIdCalib.push_back(TruePM);
-				double timeTOF2 = 0.0;
-				//timeTOF2 = calibSPMT->time(j) - ComputeSTOF(TruePM, VtxReco, VtyReco, VtzReco);
-				timeTOF2 = calibSPMT->time(j);
-				m_HitTimeCalib.push_back(timeTOF2);
-				//m_HitTimeCalib.push_back(calibSPMT->time(j));
-				double CalibSPMTBackADC = 124.*0.48*calibSPMT->charge(j)+76.;
-				// m_ChargeCalib.push_back( CalibSPMTBackADC);
-				// ChargeTot+=CalibSPMTBackADC;
-
-				m_ChargeCalib.push_back(calibSPMT->charge(j));
+				double time = calibSPMT->time(j);
+				double CalibSPMTBackADC = 124.*0.48*calibSPMT->charge(j)+76.;				
 				ChargeTot+=calibSPMT->charge(j);
+				
+				if(myIBD){
+					m_PmtIdCalib.push_back(TruePM);
+					m_HitTimeCalib.push_back(time);
+					m_ChargeCalib.push_back(calibSPMT->charge(j));
+				}
 			}
 		}
 	}
@@ -644,28 +640,22 @@ bool SelectionAlg::execute()
 			m_EnergyQuality = vertex->energyQuality();
 			m_chisq = vertex->chisq();
 		}
-		
+
+
+		// Correct HitTime with TOF
 		TVector3 vertex(m_RecX, m_RecY, m_RecZ);
 		for (size_t i = 0; i < m_PmtIdCalib.size(); i++)
 		{
 			int pmtid = m_PmtIdCalib.at(i);
 			m_TOF.setVertex(vertex);
 			m_TOF.setInterface(interface);
-			if(pmtid < 17612){
-				// TOFCalculator TOF(vertex, ALL_LPMT_pos.at(pmtid), interface); //interface is set to -40 m by default
-				m_TOF.setPMTVertex(ALL_LPMT_pos.at(pmtid));
-				double timeTOF = m_HitTimeCalib.at(i) - m_TOF.CalTOF();
-				m_HitTimeCalibTOF.push_back(timeTOF);
-			}
-			else if (pmtid >= 20000){
-				m_TOF.setPMTVertex(ALL_SPMT_pos.at(pmtid - 20000));
-				// TOFCalculator TOF(vertex, ALL_SPMT_pos.at(pmtid - 20000), interface);
-				double timeTOF = m_HitTimeCalib.at(i) - m_TOF.CalTOF();
-				m_HitTimeCalibTOF.push_back(timeTOF);
-			}
+
+			if(pmtid < 17612) m_TOF.setPMTVertex(ALL_LPMT_pos.at(pmtid));
+			else if (pmtid >= 20000) m_TOF.setPMTVertex(ALL_SPMT_pos.at(pmtid - 20000));
+
+			double timeTOF = m_HitTimeCalib.at(i) - m_TOF.CalTOF();
+			m_HitTimeCalibTOF.push_back(timeTOF);
 		}
-
-
 	}
 
 

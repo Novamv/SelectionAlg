@@ -22,12 +22,17 @@ def get_parser():
     parser.add_argument("--enableSim", dest="enableSim", action="store_true")
     parser.add_argument("--disableSim", dest="enableSim", action="store_false")
     parser.set_defaults(enableSim=False)
-    parser.add_argument("--interface", type = int, default = -99999, help="Specify LS/Water interface")
+    parser.add_argument("--interface", type = int, default = -99999, help="Specify LS/Water interface for double phase")
     parser.add_argument("--recEDMPath", type=str, default="/Event/CdVertexRec", help = "EDM path of CdVertexRec")
     parser.add_argument("--enableHitInfo", dest="saveHitInfo", action="store_true")
     parser.add_argument("--disableHitInfo", dest="saveHitInfo", action="store_false")
     parser.set_defaults(saveHitInfo=True)
-    parser.add_argument("--fiducial-volume", type=float, default=17200, help="Fiducial volume cut in mm")
+    parser.add_argument("--fiducial-volume", type=int, default=17200, help="Fiducial volume cut in mm")
+
+
+    # flags for Muon classification
+    parser.add_argument("--WPMuonCut", type=int, default=700, help="Charge cut for WP Muon Selection")
+    parser.add_argument("--CDMuonCut", type=int, default=30000, help="Charge cut for CD Muon Selection")
 
 
     return parser
@@ -73,10 +78,10 @@ if __name__ == "__main__":
     alg.property("saveHitInfo").set(args.saveHitInfo)
 
     # Add tools
-    # IBD_classifier = alg.createTool("IBDSelectionTool")
-
     import MuonClassificationTool
     muclassifier = alg.createTool("MuonClassificationTool")
+    muclassifier.property("WPMuonCut").set(args.WPMuonCut)
+    muclassifier.property("CDMuonCut").set(args.CDMuonCut)
 
     import SpalNeutronSelectionTool
     neutronclassifier = alg.createTool("SpalNeutronSelectionTool")
@@ -87,8 +92,6 @@ if __name__ == "__main__":
     ibdclassifier = alg.createTool("IBDSelectionTool")
     ibdclassifier.property("recEDMPath").set(args.recEDMPath)
     ibdclassifier.property("FiducialVolume").set(args.fiducial_volume)
-
-    # alg.property("ClassifierNames").set([muclassifier.objName()])
 
 
     import RootIOSvc
