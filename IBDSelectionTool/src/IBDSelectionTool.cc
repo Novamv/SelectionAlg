@@ -54,19 +54,21 @@ bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt, JM::EvtNavigator* munav) {
 
     LogInfo << "Checking Muon veto" << std::endl;
 
-    if(m_buf->find(munav) == m_buf->end()){
-        LogInfo << "Last Muon out of NavBuffer memory" <<std::endl;
-        return false;
-    }
-    auto muOechdr = JM::getHeaderObject<JM::OecHeader>(munav);
-    if(!muOechdr){
-        LogInfo << "No Oec Header" << std::endl;
-        return false;
-    }
-    JM::OecEvt* muOecEvt = dynamic_cast<JM::OecEvt*>(muOechdr->event("JM::OecEvt"));
-    const TTimeStamp& muTime = muOecEvt->getTime();
+    // if(m_buf->find(munav) == m_buf->end()){
+    //     LogInfo << "Last Muon out of NavBuffer memory" <<std::endl;
+    //     return false;
+    // }
+    // auto muOechdr = JM::getHeaderObject<JM::OecHeader>(munav);
+    // if(!muOechdr){
+    //     LogInfo << "No Oec Header" << std::endl;
+    //     return false;
+    // }
+    // JM::OecEvt* muOecEvt = dynamic_cast<JM::OecEvt*>(muOechdr->event("JM::OecEvt"));
+    // const TTimeStamp& muTime = muOecEvt->getTime();
+    const TTimeStamp& muTime = m_eventTagSvc->getLastMuTime();
     double dtime = (ptime.GetSec() - muTime.GetSec())*1000000000ULL + (ptime.GetNanoSec() - muTime.GetNanoSec());
 
+    LogInfo << "Last Muon dtime from prompt candidate: " << dtime*1e-6 << " ms" << std::endl;
     if(dtime*1e-6 > 5){ // 5ms muon veto
         LogInfo << "Out of veto window" << std::endl;
         return false;
@@ -74,6 +76,7 @@ bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt, JM::EvtNavigator* munav) {
 
     return true;
 }
+
 
 bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav, JM::OecEvt* pOecEvt, JM::OecEvt* dOecEvt){
 
@@ -116,10 +119,12 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
     
-            LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
             bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
+            bool isdt = dt*1e-6 > 1;
+            LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
+            LogInfo << "Is in Energy range: " << inEnergyRange << "; Is in dt range: " << !isdt << std::endl;
 
-            if (dt*1e-6 > 1) break;
+            if (isdt) break;
             else if(inEnergyRange && !isVetoed(oecevt, lastMuNav)) {
                 LogInfo << "Multiplicity before!" << std::endl;
                 return false;
@@ -145,6 +150,8 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
         
         LogInfo << "Energy: " << energy << std::endl;
         bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
+        LogInfo << "Is in Energy range: " << inEnergyRange << std::endl;
+
         
         if(inEnergyRange){
             LogInfo << "Multiplicity in between!" << std::endl;
@@ -172,8 +179,11 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
 
-            LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
             bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
+            bool isdt = dt*1e-6 > 1;
+            
+            LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
+            LogInfo << "Is in Energy range: " << inEnergyRange << "; Is in dt range: " << !isdt << std::endl;
             
             if (dt*1e-6 > 1) break;
             else if(inEnergyRange && !isVetoed(oecevt, lastMuNav)){
@@ -187,7 +197,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
 }
 
 
-bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
+bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     LogInfo << "IBD Search" << std::endl;
     if(!nav){
         LogInfo << "EvtNavigator not found" << std::endl;
@@ -196,6 +206,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
 
     std::string lastMuTag = m_eventTagSvc->getLastMuTag();
     JM::EvtNavigator* lastMuNav = m_eventTagSvc->getLastMuNav();
+    const TTimeStamp lastMuTime = m_eventTagSvc->getLastMuTime();
 
     // Load EDM
         // OEC
@@ -203,10 +214,14 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
     if(!oechdr) return false;
     m_oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
     if(!m_oecevt) return false;
-    LogInfo << "Last Mu Tag: " << lastMuTag << std::endl;
-    if(!lastMuTag.empty() && isVetoed(m_oecevt, lastMuNav)) return false;
+    
     const TTimeStamp& ptime = m_oecevt->getTime();
+    double Mudtime = (ptime.GetSec() - lastMuTime.GetSec())*1000000000ULL + (ptime.GetNanoSec() - lastMuTime.GetNanoSec());
 
+    LogInfo << "Last Mu Tag: " << lastMuTag << std::endl;
+    LogInfo << "Prompt dtime from Muon " << Mudtime << std::endl;
+
+    if(!lastMuTag.empty() && isVetoed(m_oecevt, lastMuNav)) return false;
 
         // Reco
     auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
@@ -218,13 +233,13 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
     pCharge = vertex->peSum();
     pVertex.SetXYZ(vertex->x(), vertex->y(), vertex->z());
 
-    bool energy_cut = pEnergy >= PromptEnergyCut[0] && pEnergy <= PromptEnergyCut[1];
-    bool charge_cut = pCharge >= PromptChargeCut[0] && pCharge <= PromptChargeCut[1];
+    bool energy_cut = pEnergy > PromptEnergyCut[0] && pEnergy < PromptEnergyCut[1];
+    bool charge_cut = pCharge > PromptChargeCut[0] && pCharge < PromptChargeCut[1];
     bool position_cut = pVertex.Mag() < FV_cut && !(pVertex.Perp() < 2000 && std::abs(pVertex.Z() < 15500));
 
     if(energy_cut && position_cut /*&& charge_cut*/){
         LogInfo << "Prompt IBD Candidate: " << nav << std::endl;
-        LogInfo << " - energy: " << pEnergy << " r: " << pVertex.Mag() << std::endl;
+        LogInfo << " - energy: " << pEnergy << " r: " << pVertex.Mag() << " z: " << pVertex.Z() << " rho: " << pVertex.Perp() << std::endl;
 
         JM::NavBuffer::Iterator navit = m_buf->find(nav);
         int offset = 0;
@@ -239,7 +254,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
             double dt = (dtime.GetSec() - ptime.GetSec())*1000000000ULL + (dtime.GetNanoSec() - ptime.GetNanoSec());
             
             LogInfo << "dtime prompt/delay candidate: " << dnav << " dtime: " << dt*1e-6 << " ms" << std::endl;
-            if(dt*1e-6 > 1) return false; // if dt > 1ms no delay
+            if(dt*1e-6 >= 1) return false; // if dt > 1ms no delay
             offset++;
             
             // Reco
@@ -255,8 +270,8 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
             dCharge = avertex->peSum();
             dVertex.SetXYZ(avertex->x(), avertex->y(), avertex->z());
             
-            bool energy = dEnergy >= DelayEnergyCut[0] && dEnergy <= DelayEnergyCut[1];
-            bool charge = dCharge >= DelayChargeCut[0] && dCharge <= DelayChargeCut[1];
+            bool energy = dEnergy > DelayEnergyCut[0] && dEnergy < DelayEnergyCut[1];
+            bool charge = dCharge > DelayChargeCut[0] && dCharge < DelayChargeCut[1];
             bool distance = (pVertex - dVertex).Mag() < 1500;
             LogInfo << "Energy: " << dEnergy << " Charge: " << dCharge << " r: " << dVertex.Mag() << " Distance: " << (pVertex - dVertex).Mag() << std::endl; 
                         
@@ -277,5 +292,6 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav) {
     }
 
     return false;
-
 }
+
+

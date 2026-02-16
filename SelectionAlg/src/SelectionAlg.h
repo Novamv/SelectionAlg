@@ -126,7 +126,12 @@ private :
   double m_ChargeTotWP;
   unsigned long m_TimeStampInNanoSec; 
 
-  TTree *m_ntuple1; // calibration tree
+
+  TVector3 NeutronVertex; 
+  TTimeStamp NeutronTime = NULL;
+
+  TTree *m_ntuple1; // event tree
+  int m_NeutronVeto;
   int m_NbHitLPMTCalib;
   int m_NbHitSPMTCalib;
   int m_NbHitWPCalib;
@@ -152,7 +157,7 @@ private :
   // std::vector<double> IBDProcessTime;
 
 
-  TTree *m_ntuple3; // reco tree
+  TTree *m_ntuple3; // Mu reco tree
   float m_TotalPERec;
   float m_NFiredPMT;
   float m_RecE;

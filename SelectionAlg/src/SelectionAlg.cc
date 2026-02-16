@@ -558,9 +558,13 @@ bool SelectionAlg::execute()
 
 		// If the event is a flasher, skip the event
 		bool flasher = std::pow((nhit_std - 0.55)/0.45, 2) + std::pow((m_HitTime_std - 170)/80, 2) >= 1;
-		if(flasher) return true;
+
+		LogInfo << "Is Flasher: " << flasher << std::endl;
+
+		if((m_Tag == "Prompt" || m_Tag == "Delay") && flasher) return true; //only skip flashers if it's an IBD tag
 
 		if(m_Tag == "Neutron" && m_HitTime_std < 275){
+			m_eventTagsvc->addTag(nav, "SpalNeutron");
 			m_Tag = "SpalNeutron";
 		}
 		// m_HitTime_mean = hTime->GetMean();
@@ -656,6 +660,19 @@ bool SelectionAlg::execute()
 			double timeTOF = m_HitTimeCalib.at(i) - m_TOF.CalTOF();
 			m_HitTimeCalibTOF.push_back(timeTOF);
 		}
+
+		if(m_Tag == "SpalNeutron"){
+			NeutronVertex = vertex;
+			NeutronTime = nav->TimeStamp();
+		}
+		else if(m_Tag == "Prompt"){
+			float dR = (NeutronVertex - vertex).Mag();
+			const TTimeStamp& pTime = nav->TimeStamp();
+			double dt_Neutron = (pTime.GetSec() - NeutronTime.GetSec())*1000000000ULL + (pTime.GetNanoSec() - NeutronTime.GetNanoSec());
+			if(dt_Neutron*1e-9 < 1.2 && dR < 4000){
+				m_NeutronVeto = 1;
+			}
+		}
 	}
 
 
@@ -725,6 +742,7 @@ bool SelectionAlg::Book_tree()
 	m_ntuple1->Branch("NbHitLPMTCalib", &m_NbHitLPMTCalib, "NbHitLPMTCalib/I");
 	m_ntuple1->Branch("NbHitSPMTCalib", &m_NbHitSPMTCalib, "NbHitSPMTCalib/I");
 	m_ntuple1->Branch("NbHitWPCalib", &m_NbHitWPCalib, "NbHitWPCalib/I");
+	m_ntuple1->Branch("NeutronVeto", &m_NeutronVeto "NeutronVeto/I");
 	m_ntuple1->Branch("HitTimeRMS", &m_HitTime_std);
 	m_ntuple1->Branch("HitTimeMean", &m_HitTime_mean);
 	m_ntuple1->Branch("HitTimeCalibTOF", &m_HitTimeCalibTOF);
@@ -741,20 +759,23 @@ bool SelectionAlg::Book_tree()
 	m_ntuple1->Branch("PositionQuality", &m_PosQuality);
 	m_ntuple1->Branch("EnergyQuality", &m_EnergyQuality);
 	m_ntuple1->Branch("RecChi2", &m_chisq);
-	// m_ntuple1->Branch("nTrack", &m_nTrack);
-	// m_ntuple1->Branch("MuPE", &m_MuPE);
-	// m_ntuple1->Branch("MuEntryX", &m_MuEntryX);
-	// m_ntuple1->Branch("MuEntryY", &m_MuEntryY);
-	// m_ntuple1->Branch("MuEntryZ", &m_MuEntryZ);
-	// m_ntuple1->Branch("MuEntryTheta", &m_MuEntryTheta);
-	// m_ntuple1->Branch("MuEntryPhi", &m_MuEntryPhi);
-	// m_ntuple1->Branch("MuExitX", &m_MuExitX);
-	// m_ntuple1->Branch("MuExitY", &m_MuExitY);
-	// m_ntuple1->Branch("MuExitZ", &m_MuExitZ);
-	// // m_ntuple1->Branch("MuDX", &m_MuDX);
-	// // m_ntuple1->Branch("MuDY", &m_MuDY);
-	// // m_ntuple1->Branch("MuDZ", &m_MuDZ);
-	// m_ntuple1->Branch("MuQuality", &m_MuQuality);
+
+	m_ntuple3 = svc->bookTree(*m_par, "Data/muons", "Muon Reco Tree");
+	m_ntuple3->Branch("EntryNb", &m_iEvt);
+	m_ntuple3->Branch("MuNTrack", &m_nTrack);
+	m_ntuple3->Branch("MuPE", &m_MuPE);
+	m_ntuple3->Branch("MuEntryX", &m_MuEntryX);
+	m_ntuple3->Branch("MuEntryY", &m_MuEntryY);
+	m_ntuple3->Branch("MuEntryZ", &m_MuEntryZ);
+	m_ntuple3->Branch("MuEntryTheta", &m_MuEntryTheta);
+	m_ntuple3->Branch("MuEntryPhi", &m_MuEntryPhi);
+	m_ntuple3->Branch("MuExitX", &m_MuExitX);
+	m_ntuple3->Branch("MuExitY", &m_MuExitY);
+	m_ntuple3->Branch("MuExitZ", &m_MuExitZ);
+	// m_ntuple1->Branch("MuDX", &m_MuDX);
+	// m_ntuple1->Branch("MuDY", &m_MuDY);
+	// m_ntuple1->Branch("MuDZ", &m_MuDZ);
+	m_ntuple3->Branch("MuQuality", &m_MuQuality);
 
 
 	return true;
@@ -763,6 +784,8 @@ void SelectionAlg::clearAllTrees()
 {
 
 	m_Tag = "";
+
+	m_NeutronVeto = 0;
 
 	//Calib
 	m_ChargeTotLPMT=0;

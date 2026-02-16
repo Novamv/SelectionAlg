@@ -36,12 +36,12 @@ private:
     float pCharge, dCharge;
     TVector3 pVertex, dVertex;
     int DelayEntryOffset;
-
+    
     // Methods
     bool isVetoed(JM::OecEvt*, JM::EvtNavigator*);
     bool isIsolated(JM::EvtNavigator*, JM::EvtNavigator*, JM::OecEvt*, JM::OecEvt*);
     
-    public:
+public:
     IBDSelectionTool(const std::string& name);
     ~IBDSelectionTool();
     
@@ -50,7 +50,6 @@ private:
     
     bool isPrompt(JM::EvtNavigator*);
     int getDelayOffset(){return DelayEntryOffset;};
-
 };
 
 

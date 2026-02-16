@@ -67,18 +67,20 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
     std::string lastMuTag = m_eventTagSvc->getLastMuTag();
     if(lastMuTag != "CDMuon" && lastMuTag != "CDWPMuon") return false;
     JM::EvtNavigator* lastMuNav = m_eventTagSvc->getLastMuNav();
-    if(m_buf->find(lastMuNav) == m_buf->end()){
-        LogInfo << "Last Muon out of NavBuffer memory" <<std::endl;
-        return false;
-    }
-    auto mu_oechdr = JM::getHeaderObject<JM::OecHeader>(lastMuNav);
-    if(!mu_oechdr){
-        LogInfo << "Info: No Oec Header" << std::endl;
-        return false;
+    // if(m_buf->find(lastMuNav) == m_buf->end()){
+    //     LogInfo << "Last Muon out of NavBuffer memory" <<std::endl;
+    //     return false;
+    // }
+    // auto mu_oechdr = JM::getHeaderObject<JM::OecHeader>(lastMuNav);
+    // if(!mu_oechdr){
+    //     LogInfo << "Info: No Oec Header" << std::endl;
+    //     return false;
 
-    }
-    JM::OecEvt* mu_oecevt = dynamic_cast<JM::OecEvt*>(mu_oechdr->event("JM::OecEvt"));
-    const TTimeStamp& btime = mu_oecevt->getTime();
+    // }
+    // JM::OecEvt* mu_oecevt = dynamic_cast<JM::OecEvt*>(mu_oechdr->event("JM::OecEvt"));
+    // const TTimeStamp& btime = mu_oecevt->getTime();
+    const TTimeStamp& btime = m_eventTagSvc->getLastMuTime();
+
 
     // ------- Check if within dt window -------
 

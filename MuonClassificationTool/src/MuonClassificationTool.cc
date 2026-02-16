@@ -40,6 +40,12 @@ bool MuonClassificationTool::finalize(){
 }
 
 bool MuonClassificationTool::isInDeadTime(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt, const std::string& muTag){
+    // =====================================================
+    // Check if a Muon is in is correponding dead time 
+    // Cd Muon 50 us
+    // Wp Muon 4 us
+    // =====================================================ç
+
     if(!nav || !tOecEvt){
         LogInfo << "EvtNavigator or OecEvt not found" << std::endl;
         return false;
@@ -143,7 +149,6 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
 
     float charge = oecevt->getTotalCharge();
 
-    
     JM::WpCalibHeader* wpcalibhdr = JM::getHeaderObject<JM::WpCalibHeader>(nav);
     JM::CdLpmtCalibHeader* cdcalibhdr = JM::getHeaderObject<JM::CdLpmtCalibHeader>(nav);
 
@@ -151,13 +156,16 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
     LogInfo << "Wp event " << wpcalibhdr << std::endl;
     LogInfo << "Cd event " << cdcalibhdr << std::endl;
 
+    // WP Muon Only
     if(wpcalibhdr && charge > WPMuonChargeCut && !isInDeadTime(nav, oecevt, "WP")){
         LogInfo << "Wp Muon with charge = " << charge << " PE" << std::endl;
         m_eventTagSvc->addTag(nav, "WPMuon");
         return true;
     }
 
+    //CD + WP Muon
     if(cdcalibhdr && charge > CDMuonChargeCut && !isInDeadTime(nav, oecevt, "CD")){
+
         //look for WP Muon before (500 ns)
         LogInfo << "Searching WP correlation 500 ns before" << std::endl;
         JM::NavBuffer::Iterator it = navit - 1;
@@ -211,6 +219,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
         }
         
 
+        //CD Muon Only
         if(!isVetoed(nav, oecevt)){
             LogInfo << "Cd Muon with charge = " << charge << " PE" << std::endl;
             m_eventTagSvc->addTag(nav, "CDMuon");

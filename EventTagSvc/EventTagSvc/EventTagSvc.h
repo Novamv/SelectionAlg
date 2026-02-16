@@ -9,11 +9,13 @@
 #include <vector>
 
 #include "TTimeStamp.h"
+#include "TVector3.h"
 
 //----------------- List Of Tags -----------------
 // 1. Muon Related: CDMuon, WPMuon, CDWPMuon
-// 2. Neutron
+// 2. Neutron, SpalNeutron (Neutron is AfterPulse-like while SpalNeutron has the correct Hit time std and mean)
 // 3. IBD related: Prompt, Delay
+//------------------------------------------------
 
 
 class EventTagSvc : public SvcBase {
@@ -28,8 +30,9 @@ class EventTagSvc : public SvcBase {
         std::string getTag(JM::EvtNavigator* nav);
         bool hasTag(JM::EvtNavigator* nav);
 
-        JM::EvtNavigator* getLastMuNav(){return m_LastMuNav;}
-        std::string getLastMuTag(){return m_LastMuTag;} 
+        JM::EvtNavigator* getLastMuNav(){return m_LastMuNav;};
+        std::string getLastMuTag(){return m_LastMuTag;};
+        TTimeStamp getLastMuTime(){return m_lastTimeStamp;};
 
     private:
         // std::unordered_map<JM::EvtNavigator*, std::string> m_tags;
@@ -39,6 +42,8 @@ class EventTagSvc : public SvcBase {
         std::string m_LastTag;
         JM::EvtNavigator* m_LastMuNav {nullptr};
         std::string m_LastMuTag;
+        TTimeStamp m_LastMuTS = NULL;
+
 
 };
 

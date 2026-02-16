@@ -32,6 +32,7 @@ void EventTagSvc::addTag(JM::EvtNavigator* nav, const std::string& tag) {
     if(tag=="CDMuon" || tag=="WPMuon" || tag=="CDWPMuon"){
         m_LastMuTag = tag;
         m_LastMuNav = nav;
+        m_LastMuTS = TS;
     }
     else{
         m_LastTag = tag;
