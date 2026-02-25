@@ -72,7 +72,7 @@ SelectionAlg::SelectionAlg(const std::string& name)
 	declProp("ClassifierNames", m_classifiernames);
 	declProp("Filename", filename);
 
-	PMT_R = 35.4; //m
+	PMT_R = 19.434; //m
 	LS_R = 17.7; //m
 	RfrIndxLS = 1.5;
 	RfrIndxWR = 1.355;
@@ -742,7 +742,7 @@ bool SelectionAlg::Book_tree()
 	m_ntuple1->Branch("NbHitLPMTCalib", &m_NbHitLPMTCalib, "NbHitLPMTCalib/I");
 	m_ntuple1->Branch("NbHitSPMTCalib", &m_NbHitSPMTCalib, "NbHitSPMTCalib/I");
 	m_ntuple1->Branch("NbHitWPCalib", &m_NbHitWPCalib, "NbHitWPCalib/I");
-	m_ntuple1->Branch("NeutronVeto", &m_NeutronVeto "NeutronVeto/I");
+	m_ntuple1->Branch("NeutronVeto", &m_NeutronVeto, "NeutronVeto/I");
 	m_ntuple1->Branch("HitTimeRMS", &m_HitTime_std);
 	m_ntuple1->Branch("HitTimeMean", &m_HitTime_mean);
 	m_ntuple1->Branch("HitTimeCalibTOF", &m_HitTimeCalibTOF);

@@ -10,7 +10,7 @@ TOFCalculator::TOFCalculator()
     params.n_Water = 1.355;
 
     c = 299792458.0; //m/s
-    PMT_R = 35.4; //m
+    PMT_R = 19.434; //m
 	LS_R = 17.7; //m
 }
 
