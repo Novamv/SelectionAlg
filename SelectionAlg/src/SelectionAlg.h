@@ -38,14 +38,48 @@ enum class SkipReason {
   MissingHeader
 };
 
+struct PendingIBD {
+  int     promptEntry;      // m_iEvt at the time isPrompt() fired
+  int     delayEntryOffset; // relative offset returned by getDelayOffset()
+
+  float   pEnergy;
+  float   pX, pY, pZ;
+  float   pNPE;
+  uint64_t pTimeStamp;      // ns
+  std::vector<double> pHitTimeTOF;
+
+  int NeutronVeto;
+}
+
+struct IBDPair {
+  // --- Coincidence ---
+  double  dt_ns;      // delay - prompt time in ns 
+  float   dR_mm;      // |pVertex - dVertex| in mm
+
+  // --- Prompt ---
+  float   pEnergy;
+  float   pX, pY, pZ;
+  float   pNPE;
+  uint64_t pTimeStamp;
+  std::vector<double> pHitTimeTOF;
+
+  // --- Delay ---
+  float   dEnergy;
+  float   dX, dY, dZ;
+  float   dNPE;
+  uint64_t dTimeStamp;
+  std::vector<double> dHitTimeTOF;
+
+
+  // --- Flags ---
+  int     neutronVeto;    // 1 if prompt is within spallation-neutron sphere
+  int     runNumber;
+  int     promptEntry;
+  int     delayEntry;
+}
 
 class SelectionAlg : public AlgBase
 {
-private :
-  
-  double ComputeLTOF(double pmtid, double evtx, double evty, double evtz);
-  double ComputeSTOF(double pmtid, double evtx, double evty, double evtz);
-  
 public :
   
   SelectionAlg(const std::string& name);
@@ -88,6 +122,7 @@ private :
   TTimeStamp prevCDTime;
   TTimeStamp prevWPTime;
   int m_DelayEvt;
+  std::vector<PendingIBD> m_pendingIBD;
 
   // skipping
   SkipReason skipReason = SkipReason::None;
@@ -182,6 +217,9 @@ private :
   // std::vector<float> m_MuDX;
   // std::vector<float> m_MuDY;
   // std::vector<float> m_MuDZ;
+
+  TTree *m_ibdtree; 
+  IBDPair m_pair;
 
   //Oec related
   int m_myOECtag;

@@ -235,7 +235,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
 
     bool energy_cut = pEnergy > PromptEnergyCut[0] && pEnergy < PromptEnergyCut[1];
     bool charge_cut = pCharge > PromptChargeCut[0] && pCharge < PromptChargeCut[1];
-    bool position_cut = pVertex.Mag() < FV_cut && !(pVertex.Perp() < 2000 && std::abs(pVertex.Z() < 15500));
+    bool position_cut = pVertex.Mag() < FV_cut && !(pVertex.Perp() < 2000 && std::abs(pVertex.Z()) < 15500);
 
     if(energy_cut && position_cut /*&& charge_cut*/){
         LogInfo << "Prompt IBD Candidate: " << nav << std::endl;
@@ -246,15 +246,19 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
         for(JM::NavBuffer::Iterator it = navit + 1; it != m_buf->end(); ++it) {
 
             JM::EvtNavigator* dnav = it->get();
+
             auto dOecHdr = JM::getHeaderObject<JM::OecHeader>(dnav);
+            if(!dOecHdr) continue;
             JM::OecEvt* dOecEvt = dynamic_cast<JM::OecEvt*>(dOecHdr->event("JM::OecEvt"));
-            // if(isVetoed(dOecEvt, lastMuNav)) return false;
+            if(!dOecEvt) continue;
+            
             const TTimeStamp& dtime = dOecEvt->getTime();
 
             double dt = (dtime.GetSec() - ptime.GetSec())*1000000000ULL + (dtime.GetNanoSec() - ptime.GetNanoSec());
             
             LogInfo << "dtime prompt/delay candidate: " << dnav << " dtime: " << dt*1e-6 << " ms" << std::endl;
-            if(dt*1e-6 >= 1) return false; // if dt > 1ms no delay
+            if(dt*1e-3 <= 5) continue;
+            if(dt*1e-6 > 1) return false; // if dt > 1ms no delay
             offset++;
             
             // Reco

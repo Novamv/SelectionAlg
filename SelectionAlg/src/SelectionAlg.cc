@@ -293,7 +293,7 @@ bool SelectionAlg::execute()
 
 	if(m_iEvt == 0) {
 		PreviousTime = theTime;
-		skipReason = SkipReason::StartOfFile;
+		skipReason = SkipReason::StartOfFile; // Will skip the first 1.2 sec of the file
 		skipStartTime = theTime;
 		FirstTime = theTime;
 		dtCD = 0;
@@ -320,7 +320,7 @@ bool SelectionAlg::execute()
 
 	double globalTime = (theTime.GetSec() - FirstTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - FirstTime.GetNanoSec());
 
-	uint64_t dt = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
+	int64_t dt = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
 	double dtLastMuon = (theTime.GetSec() - tLastMuon.GetSec())*1000000000ULL + (theTime.GetNanoSec() - tLastMuon.GetNanoSec());
 
 	LogInfo << "Global time: " << globalTime << std::endl;
@@ -347,27 +347,29 @@ bool SelectionAlg::execute()
 		if(dtCD == 0) dtCD = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
 		else dtCD = (theTime.GetSec() - prevCDTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - prevCDTime.GetNanoSec());
 		
-		prevCDTime = theTime;
 		LogInfo << "dtCD: " << dtCD << std::endl;
+		prevCDTime = theTime;
 
 		if(dtCD > 50e6) {
 			skipReason = SkipReason::BigGap;
 			skipStartTime = theTime;
-			LogInfo << "New skip reason: CD gap > 50ms" << std::endl;
+			PreviousTime = theTime;
+			LogInfo << "New skip reason: CD gap > 50 ms" << std::endl;
 			return true;
 		}
 	}
 	if(calibheaderWP){
 		if(dtWP == 0) dtWP = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
 		else dtWP = (theTime.GetSec() - prevWPTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - prevWPTime.GetNanoSec());
-
-		prevWPTime = theTime;
+		
 		LogInfo << "dtWP: " << dtWP << std::endl;
+		prevWPTime = theTime;
 		
 		if(dtWP > 70e6) {
 			skipReason = SkipReason::BigGap;
 			skipStartTime = theTime;
-			LogInfo << "New skip reason: WP gap > 50ms" << std::endl;
+			PreviousTime = theTime;
+			LogInfo << "New skip reason: WP gap > 50 ms" << std::endl;
 			return true;
 		}
 	}
@@ -383,8 +385,7 @@ bool SelectionAlg::execute()
 	
 	LogInfo << "Run Time: " << runtime << std::endl;
 	LogInfo << "Effective Run Time: " << effruntime << std::endl;
-	
-	
+
 // ================================================
 // =============  Run Classification  =============
 // ================================================
@@ -406,17 +407,15 @@ bool SelectionAlg::execute()
 		m_Tag = m_eventTagsvc->getTag(nav);
 		nNeutrons++;
 	}
-	else if(dtLastMuon > 5e6 && m_IBDClassifier->isPrompt(nav)) {
+	else if(dtLastMuon > 5e6 && m_IBDClassifier->isPrompt(nav)) { // If IBD out of Muon veto fill prompt information
 		m_Tag = m_eventTagsvc->getTag(nav);
 		m_DelayEvt = m_iEvt + m_IBDClassifier->getDelayOffset();
 		nIBD++;
 	}
-		
 
 	LogInfo << "Current Tag: " << m_Tag << std::endl;
 	if(m_Tag == "") return true;
 
-	// nav = m_buf->curEvt(); // in case classification messes up the nav (shouldn't)
 
 // ================================================
 // ========  Fill Trees for tagged events  ========
@@ -571,7 +570,7 @@ bool SelectionAlg::execute()
 		// m_HitTime_std = hTime->GetRMS();
 
 		// Fill Hit level information only for IBD tagged events
-		if(myIBD){
+		if(myIBD || m_myOECtag != ""){
 			m_PmtIdCalib.insert(m_PmtIdCalib.end(), tempPmtIds.begin(), tempPmtIds.end());
 			m_HitTimeCalib.insert(m_HitTimeCalib.end(), tempHitTimes.begin(), tempHitTimes.end());
 			m_ChargeCalib.insert(m_ChargeCalib.end(), tempCharges.begin(), tempCharges.end());
@@ -701,16 +700,83 @@ bool SelectionAlg::execute()
 		}
 	}
 
-	// if(calibeventLPMT || calibeventSPMT || calibeventWP || oecevt) //If there is a trigger fill all trees
+// =============  Fill Trees and check pending Prompts  =============
+
+	if(m_Tag == "Prompt"){
+		PendingIBD cand;
+		cand.promptEntry 		= m_iEvt;
+		cand.delayEntryOffset 	= m_IBDClassifier->getDelayOffset();
+		cand.pTimeStamp 		= theTime.GetSec()*1000000000ULL + theTime.GetNanoSec();
+		cand.pHitTimeTOF 		= m_HitTimeCalibTOF;
+		cand.pEnergy 			= m_RecE;
+		cand.pX 				= m_RecX; 
+		cand.pY 				= m_RecY;
+		cand.pZ 				= m_RecZ;
+		cand.pNPE 				= m_ChargeTotLPMT;
+		cand.NeutronVeto		= m_NeutronVeto;
+
+		m_pendingIBD.push_back(cand);
+	}
+	else{
+		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end(); ++it){
+			double dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
+
+			if(dt_since_prompt > 1.2e-9){
+				LogInfo << "Expired IBD Prompt (entry " << it->promptEntry << ")" << std::endl;
+				it = m_pendingIBD.erase(it);
+				continue;
+			}
+
+			if(m_iEvt == it->promptEntry + it->delayEntryOffset){
+				LogInfo << "IBD delay match prompt entry" << std::endl;
+				m_Tag = "Delay";
+
+				TVector3 pVtx(it->pX, it->pY, it->pZ);
+                TVector3 dVtx(m_RecX, m_RecY, m_RecZ);
+
+				m_pair.dt_ns = dt_since_prompt;
+				m_pair.dR_mm = (float)(pVtx - dVtx).Mag();
+				
+				m_pair.pEnergy     = it->pEnergy;
+                m_pair.pX          = it->pX;
+                m_pair.pY          = it->pY;
+                m_pair.pZ          = it->pZ;
+                m_pair.pNPE        = it->pNPE;
+                m_pair.pTimeStamp  = it->pTimeStamp;
+				m_pair.pHitTimeTOF = it->pHitTimeTOF;
+
+				m_pair.dEnergy 	   = m_RecE;
+				m_pair.dX          = m_RecX;
+                m_pair.dY          = m_RecY;
+                m_pair.dZ          = m_RecZ;
+                m_pair.dNPE        = m_ChargeTotLPMT;
+                m_pair.dTimeStamp  = theTime.GetSec()*1000000000ULL + theTime.GetNanoSec();
+				m_pair.dHitTimeTOF = it->dHitTimeTOF;
+
+				m_ibdtree->Fill(); 
+                LogInfo << "IBD pair filled: dt="
+                        << m_pair.dt_ns * 1e-3 << " µs  dR="
+                        << m_pair.dR_mm        << " mm" << std::endl;
+
+				it = m_pendingIBD.erase(it);
+				continue;
+			}
+		}
+	}
+
 
 	if(m_Tag!="" || m_OECtag != ""){
 		LogInfo << "Filling event tree" << std::endl;
 		m_ntuple1->Fill();
 	}
 
-	 return true;
+	return true;
 
 }
+
+
+
+
 
 bool SelectionAlg::Book_tree()
 {
@@ -777,6 +843,31 @@ bool SelectionAlg::Book_tree()
 	// m_ntuple1->Branch("MuDZ", &m_MuDZ);
 	m_ntuple3->Branch("MuQuality", &m_MuQuality);
 
+	// ============= IBD Pair Tree =============
+	m_ibdtree = svc->bookTree(*m_par, "Data/ibd", "IBD pair events");
+	m_ibdtree->Branch("RunNb", 		 &m_pair.runNumber);
+	m_ibdtree->Branch("dt_ns", 		 &m_pair.dt_ns);
+	m_ibdtree->Branch("dR_ns", 		 &m_pair.dR_mm);
+	//Prompt
+	m_ibdtree->Branch("pEntry", 	 &m_pair.promptEntry);
+	m_ibdtree->Branch("pEnergy", 	 &m_pair.pEnergy);
+	m_ibdtree->Branch("pX", 		 &m_pair.pX);
+	m_ibdtree->Branch("pY", 		 &m_pair.pY);
+	m_ibdtree->Branch("pZ", 		 &m_pair.pZ);
+	m_ibdtree->Branch("pNPE", 		 &m_pair.pNPE);
+	m_ibdtree->Branch("pTimeStamp",  &m_pair.pTimeStamp, "pTimeStamp/l");
+	m_ibdtree->Branch("pHitTimeTOF", &m_pair.pHitTimeTOF);
+	//Delay
+	m_ibdtree->Branch("dEntry", 	 &m_pair.delayEntry);
+	m_ibdtree->Branch("dEnergy",  	 &m_pair.dEnergy);
+	m_ibdtree->Branch("dX", 	  	 &m_pair.dX);
+	m_ibdtree->Branch("dY", 	  	 &m_pair.dY);
+	m_ibdtree->Branch("dZ", 	  	 &m_pair.dZ);
+	m_ibdtree->Branch("dNPE",	  	 &m_pair.dNPE);
+	m_ibdtree->Branch("dTimeStamp",  &m_pair.dTimeStamp, "dTimeStamp/l");
+	m_ibdtree->Branch("dHitTimeTOF", &m_pair.dHitTimeTOF);
+
+	m_ibdtree->Branch("NeutronVeto", &m_pair.neutronVeto);
 
 	return true;
 }
