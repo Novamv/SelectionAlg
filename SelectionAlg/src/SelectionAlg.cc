@@ -718,7 +718,7 @@ bool SelectionAlg::execute()
 		m_pendingIBD.push_back(cand);
 	}
 	else{
-		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end(); ++it){
+		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end();){
 			double dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
 
 			if(dt_since_prompt > 1.2e-9){
@@ -763,6 +763,8 @@ bool SelectionAlg::execute()
 				it = m_pendingIBD.erase(it);
 				continue;
 			}
+
+			++it;
 		}
 	}
 
@@ -848,8 +850,8 @@ bool SelectionAlg::Book_tree()
 	// ============= IBD Pair Tree =============
 	m_ibdtree = svc->bookTree(*m_par, "Data/ibd", "IBD pair events");
 	m_ibdtree->Branch("RunNb", 		 &m_pair.runNumber);
-	m_ibdtree->Branch("dt_ns", 		 &m_pair.dt_ns);
-	m_ibdtree->Branch("dR_ns", 		 &m_pair.dR_mm);
+	m_ibdtree->Branch("dt", 		 &m_pair.dt_ns);
+	m_ibdtree->Branch("dR", 		 &m_pair.dR_mm);
 	//Prompt
 	m_ibdtree->Branch("pEntry", 	 &m_pair.promptEntry);
 	m_ibdtree->Branch("pEnergy", 	 &m_pair.pEnergy);
@@ -924,11 +926,4 @@ void SelectionAlg::clearAllTrees()
 	// m_MuDY.clear(); 
 	// m_MuDZ.clear();
 	m_MuQuality.clear();
-
-	PMT_R=0;
-	LS_R=0;
-
-	RfrIndxLS=0;
-	RfrIndxWR=0;
-	c=0;
 }
