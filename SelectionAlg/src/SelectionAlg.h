@@ -49,7 +49,7 @@ struct PendingIBD {
   std::vector<double> pHitTimeTOF;
 
   int NeutronVeto;
-}
+};
 
 struct IBDPair {
   // --- Coincidence ---
@@ -76,7 +76,7 @@ struct IBDPair {
   int     runNumber;
   int     promptEntry;
   int     delayEntry;
-}
+};
 
 class SelectionAlg : public AlgBase
 {

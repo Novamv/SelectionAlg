@@ -570,7 +570,7 @@ bool SelectionAlg::execute()
 		// m_HitTime_std = hTime->GetRMS();
 
 		// Fill Hit level information only for IBD tagged events
-		if(myIBD || m_myOECtag != ""){
+		if(myIBD || m_OECtag != ""){
 			m_PmtIdCalib.insert(m_PmtIdCalib.end(), tempPmtIds.begin(), tempPmtIds.end());
 			m_HitTimeCalib.insert(m_HitTimeCalib.end(), tempHitTimes.begin(), tempHitTimes.end());
 			m_ChargeCalib.insert(m_ChargeCalib.end(), tempCharges.begin(), tempCharges.end());
@@ -664,7 +664,7 @@ bool SelectionAlg::execute()
 			NeutronVertex = vertex;
 			NeutronTime = nav->TimeStamp();
 		}
-		else if(m_Tag == "Prompt"){
+		else if(m_Tag == "Prompt"){ // To be removed
 			float dR = (NeutronVertex - vertex).Mag();
 			const TTimeStamp& pTime = nav->TimeStamp();
 			double dt_Neutron = (pTime.GetSec() - NeutronTime.GetSec())*1000000000ULL + (pTime.GetNanoSec() - NeutronTime.GetNanoSec());
@@ -713,7 +713,7 @@ bool SelectionAlg::execute()
 		cand.pY 				= m_RecY;
 		cand.pZ 				= m_RecZ;
 		cand.pNPE 				= m_ChargeTotLPMT;
-		cand.NeutronVeto		= m_NeutronVeto;
+		cand.NeutronVeto		= (int)m_IBDClassifier->isNeutronVetoed(nav);
 
 		m_pendingIBD.push_back(cand);
 	}
@@ -751,7 +751,9 @@ bool SelectionAlg::execute()
                 m_pair.dZ          = m_RecZ;
                 m_pair.dNPE        = m_ChargeTotLPMT;
                 m_pair.dTimeStamp  = theTime.GetSec()*1000000000ULL + theTime.GetNanoSec();
-				m_pair.dHitTimeTOF = it->dHitTimeTOF;
+				m_pair.dHitTimeTOF = m_HitTimeCalibTOF;
+				
+				m_pair.neutronVeto = it->NeutronVeto;
 
 				m_ibdtree->Fill(); 
                 LogInfo << "IBD pair filled: dt="

@@ -298,4 +298,43 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     return false;
 }
 
+bool IBDSelectionTool::isNeutronVetoed(JM::EvtNavigator* nav){
+    LogInfo << "Prompt Neutron Veto search" << std::endl;
+
+    TTimeStamp pTime = nav->TimeStamp();
+
+    auto prechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
+    if(!prechdr) return false;
+    m_recevt = prechdr->event();
+
+    const auto vertex = m_recevt->getVertex(0); // Assumes 1 vertex per event (might be false)
+    TVector3 p_vertex(vertex->x(), vertex->y(), vertex->z());
+
+    JM::NavBuffer::Iterator navit = m_buf->find(nav);
+
+    for(JM::NavBuffer::Iterator it = navit - 1; it != m_buf->begin(); --it) {
+        
+        JM::EvtNavigator* neutron_nav = it->get();
+        auto tag = m_eventTagSvc->getTag(neutron_nav);
+
+        auto nrechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
+        if(!nrechdr) return false;
+        JM::CdVertexRecEvt* nrecevt = nrechdr->event();
+
+        const auto nVtx = nrecevt->getVertex(0); 
+        TVector3 n_vertex(nVtx->x(), nVtx->y(), nVtx->z());
+
+        TTimeStamp nTime = neutron_nav->TimeStamp();
+        double dt = (pTime.GetSec() - nTime.GetSec()) * 1000000000ULL + (pTime.GetNanoSec() - nTime.GetNanoSec());
+        double dR = (p_vertex - n_vertex).Mag();
+
+        if(tag != "SpalNeutron") continue;
+        else if(dt > 1.2e-9) return false; // If dt > 1.2 s out of window
+        else if(dR < 4000) return true;
+        
+    }
+
+    return false;
+}
+
 
