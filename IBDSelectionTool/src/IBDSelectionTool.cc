@@ -329,8 +329,8 @@ bool IBDSelectionTool::isNeutronVetoed(JM::EvtNavigator* nav){
         double dR = (p_vertex - n_vertex).Mag();
 
         if(tag != "SpalNeutron") continue;
-        else if(dt > 1.2e-9) return false; // If dt > 1.2 s out of window
-        else if(dR < 4000) return true;
+        if(dt >= 1.2e-9) return false; // If dt > 1.2 s out of window
+        if(tag == "SpalNeutron" && dt < 1.2e-9 && dR < 4000) return true;
         
     }
 
