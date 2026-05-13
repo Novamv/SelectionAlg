@@ -32,7 +32,7 @@ class EventTagSvc : public SvcBase {
 
         JM::EvtNavigator* getLastMuNav(){return m_LastMuNav;};
         std::string getLastMuTag(){return m_LastMuTag;};
-        TTimeStamp getLastMuTime(){return m_lastTimeStamp;};
+        TTimeStamp getLastMuTime(){return m_LastMuTS;};
 
     private:
         // std::unordered_map<JM::EvtNavigator*, std::string> m_tags;
@@ -43,8 +43,6 @@ class EventTagSvc : public SvcBase {
         JM::EvtNavigator* m_LastMuNav {nullptr};
         std::string m_LastMuTag;
         TTimeStamp m_LastMuTS = NULL;
-
-
 };
 
 

@@ -49,6 +49,7 @@ public:
     bool finalize();
     
     bool isPrompt(JM::EvtNavigator*);
+    bool isNeutronVetoed(JM::EvtNavigator*);
     int getDelayOffset(){return DelayEntryOffset;};
 };
 

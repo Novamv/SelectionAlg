@@ -737,6 +737,7 @@ bool SelectionAlg::execute()
 				m_pair.dt_ns = dt_since_prompt;
 				m_pair.dR_mm = (float)(pVtx - dVtx).Mag();
 				
+				m_pair.promptEntry = it->promptEntry;
 				m_pair.pEnergy     = it->pEnergy;
                 m_pair.pX          = it->pX;
                 m_pair.pY          = it->pY;
@@ -745,6 +746,7 @@ bool SelectionAlg::execute()
                 m_pair.pTimeStamp  = it->pTimeStamp;
 				m_pair.pHitTimeTOF = it->pHitTimeTOF;
 
+				m_pair.delayEntry  = m_iEvt;
 				m_pair.dEnergy 	   = m_RecE;
 				m_pair.dX          = m_RecX;
                 m_pair.dY          = m_RecY;
@@ -788,64 +790,64 @@ bool SelectionAlg::Book_tree()
 
 	m_ntuple2 = svc->bookTree(*m_par,"Data/RunInfo", "EventInfo");
 	// m_ntuple2->Branch("EntryNb", &m_iEvt, "EntryNb/I");
-	m_ntuple2->Branch("RunNb", &m_iRun,"Run/I");
-	m_ntuple2->Branch("RunTime", &runtime);
+	m_ntuple2->Branch("RunNb", 			  &m_iRun,"Run/I");
+	m_ntuple2->Branch("RunTime", 		  &runtime);
 	m_ntuple2->Branch("EffectiveRunTime", &effruntime);
-	m_ntuple2->Branch("nCDMuon", &nCDMuons);
-	m_ntuple2->Branch("nCDWPMuon", &nCDWPMuons);
-	m_ntuple2->Branch("nWPMuon", &nWPMuons);
-	m_ntuple2->Branch("nNeutron", &nNeutrons);
-	m_ntuple2->Branch("nIBD", &nIBD);
+	m_ntuple2->Branch("nCDMuon", 		  &nCDMuons);
+	m_ntuple2->Branch("nCDWPMuon", 		  &nCDWPMuons);
+	m_ntuple2->Branch("nWPMuon", 		  &nWPMuons);
+	m_ntuple2->Branch("nNeutron", 		  &nNeutrons);
+	m_ntuple2->Branch("nIBD", 			  &nIBD);
 	
 	
 	m_ntuple1 = svc->bookTree(*m_par,"Data/event", "Event Level Tree");
-	m_ntuple1->Branch("Filename", &m_fname);
-	m_ntuple1->Branch("EntryNb", &m_iEvt, "EntryNb/I");
-	m_ntuple1->Branch("Tag", &m_Tag);
-	m_ntuple1->Branch("OecTag", &m_OECtag);
-	m_ntuple1->Branch("RunNb", &m_iRun,"RunNb/I");
-	m_ntuple1->Branch("TriggerName", &m_TriggerName);
-	m_ntuple1->Branch("TimeStamp",&m_TimeStamp,"TimeStamp/l");
-	m_ntuple1->Branch("ChargeTotLPMT",&m_ChargeTotLPMT,"ChargeTotLPMT/D");
-	m_ntuple1->Branch("ChargeTotSPMT",&m_ChargeTotSPMT,"ChargeTotSPMT/D");
-	m_ntuple1->Branch("ChargeTotWP",&m_ChargeTotWP,"ChargeTotWP/D");
-	m_ntuple1->Branch("NbHitLPMTCalib", &m_NbHitLPMTCalib, "NbHitLPMTCalib/I");
-	m_ntuple1->Branch("NbHitSPMTCalib", &m_NbHitSPMTCalib, "NbHitSPMTCalib/I");
-	m_ntuple1->Branch("NbHitWPCalib", &m_NbHitWPCalib, "NbHitWPCalib/I");
-	m_ntuple1->Branch("NeutronVeto", &m_NeutronVeto, "NeutronVeto/I");
-	m_ntuple1->Branch("HitTimeRMS", &m_HitTime_std);
-	m_ntuple1->Branch("HitTimeMean", &m_HitTime_mean);
+	m_ntuple1->Branch("Filename", 		 &m_fname);
+	m_ntuple1->Branch("EntryNb", 		 &m_iEvt, "EntryNb/I");
+	m_ntuple1->Branch("Tag", 			 &m_Tag);
+	m_ntuple1->Branch("OecTag", 		 &m_OECtag);
+	m_ntuple1->Branch("RunNb", 		 	 &m_iRun,"RunNb/I");
+	m_ntuple1->Branch("TriggerName", 	 &m_TriggerName);
+	m_ntuple1->Branch("TimeStamp",		 &m_TimeStamp,"TimeStamp/l");
+	m_ntuple1->Branch("ChargeTotLPMT",	 &m_ChargeTotLPMT,"ChargeTotLPMT/D");
+	m_ntuple1->Branch("ChargeTotSPMT",	 &m_ChargeTotSPMT,"ChargeTotSPMT/D");
+	m_ntuple1->Branch("ChargeTotWP",	 &m_ChargeTotWP,"ChargeTotWP/D");
+	m_ntuple1->Branch("NbHitLPMTCalib",  &m_NbHitLPMTCalib, "NbHitLPMTCalib/I");
+	m_ntuple1->Branch("NbHitSPMTCalib",  &m_NbHitSPMTCalib, "NbHitSPMTCalib/I");
+	m_ntuple1->Branch("NbHitWPCalib", 	 &m_NbHitWPCalib, "NbHitWPCalib/I");
+	m_ntuple1->Branch("NeutronVeto", 	 &m_NeutronVeto, "NeutronVeto/I");
+	m_ntuple1->Branch("HitTimeRMS", 	 &m_HitTime_std);
+	m_ntuple1->Branch("HitTimeMean", 	 &m_HitTime_mean);
 	m_ntuple1->Branch("HitTimeCalibTOF", &m_HitTimeCalibTOF);
 	if(saveHitInfo){
-		m_ntuple1->Branch("PmtIDCalib", &m_PmtIdCalib);
+		m_ntuple1->Branch("PmtIDCalib",  &m_PmtIdCalib);
 		m_ntuple1->Branch("ChargeCalib", &m_ChargeCalib);
 	}
-	m_ntuple1->Branch("TotalPERec", &m_TotalPERec);
-	m_ntuple1->Branch("RecEnergy", &m_RecE, "RecEnergy/F");
-	m_ntuple1->Branch("Recx", &m_RecX, "Recx/F");
-	m_ntuple1->Branch("Recy", &m_RecY, "Recy/F");
-	m_ntuple1->Branch("Recz", &m_RecZ, "Recz/F");
-	m_ntuple1->Branch("RecT0", &m_T0, "RecT0/F");
+	m_ntuple1->Branch("TotalPERec", 	 &m_TotalPERec);
+	m_ntuple1->Branch("RecEnergy", 		 &m_RecE, "RecEnergy/F");
+	m_ntuple1->Branch("Recx", 			 &m_RecX, "Recx/F");
+	m_ntuple1->Branch("Recy", 			 &m_RecY, "Recy/F");
+	m_ntuple1->Branch("Recz",			 &m_RecZ, "Recz/F");
+	m_ntuple1->Branch("RecT0", 			 &m_T0, "RecT0/F");
 	m_ntuple1->Branch("PositionQuality", &m_PosQuality);
-	m_ntuple1->Branch("EnergyQuality", &m_EnergyQuality);
-	m_ntuple1->Branch("RecChi2", &m_chisq);
+	m_ntuple1->Branch("EnergyQuality", 	 &m_EnergyQuality);
+	m_ntuple1->Branch("RecChi2", 	  	 &m_chisq);
 
-	m_ntuple3 = svc->bookTree(*m_par, "Data/muons", "Muon Reco Tree");
-	m_ntuple3->Branch("EntryNb", &m_iEvt);
-	m_ntuple3->Branch("MuNTrack", &m_nTrack);
-	m_ntuple3->Branch("MuPE", &m_MuPE);
-	m_ntuple3->Branch("MuEntryX", &m_MuEntryX);
-	m_ntuple3->Branch("MuEntryY", &m_MuEntryY);
-	m_ntuple3->Branch("MuEntryZ", &m_MuEntryZ);
-	m_ntuple3->Branch("MuEntryTheta", &m_MuEntryTheta);
-	m_ntuple3->Branch("MuEntryPhi", &m_MuEntryPhi);
-	m_ntuple3->Branch("MuExitX", &m_MuExitX);
-	m_ntuple3->Branch("MuExitY", &m_MuExitY);
-	m_ntuple3->Branch("MuExitZ", &m_MuExitZ);
-	// m_ntuple1->Branch("MuDX", &m_MuDX);
-	// m_ntuple1->Branch("MuDY", &m_MuDY);
-	// m_ntuple1->Branch("MuDZ", &m_MuDZ);
-	m_ntuple3->Branch("MuQuality", &m_MuQuality);
+	// m_ntuple3 = svc->bookTree(*m_par, "Data/muons", "Muon Reco Tree");
+	// m_ntuple3->Branch("EntryNb", &m_iEvt);
+	// m_ntuple3->Branch("MuNTrack", &m_nTrack);
+	// m_ntuple3->Branch("MuPE", &m_MuPE);
+	// m_ntuple3->Branch("MuEntryX", &m_MuEntryX);
+	// m_ntuple3->Branch("MuEntryY", &m_MuEntryY);
+	// m_ntuple3->Branch("MuEntryZ", &m_MuEntryZ);
+	// m_ntuple3->Branch("MuEntryTheta", &m_MuEntryTheta);
+	// m_ntuple3->Branch("MuEntryPhi", &m_MuEntryPhi);
+	// m_ntuple3->Branch("MuExitX", &m_MuExitX);
+	// m_ntuple3->Branch("MuExitY", &m_MuExitY);
+	// m_ntuple3->Branch("MuExitZ", &m_MuExitZ);
+	// // m_ntuple1->Branch("MuDX", &m_MuDX);
+	// // m_ntuple1->Branch("MuDY", &m_MuDY);
+	// // m_ntuple1->Branch("MuDZ", &m_MuDZ);
+	// m_ntuple3->Branch("MuQuality", &m_MuQuality);
 
 	// ============= IBD Pair Tree =============
 	m_ibdtree = svc->bookTree(*m_par, "Data/ibd", "IBD pair events");
