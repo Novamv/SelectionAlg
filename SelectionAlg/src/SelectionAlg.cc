@@ -377,7 +377,7 @@ bool SelectionAlg::execute()
 	// =============  Runtime counting  =============
 	
 	runtime += dt;
-	if(dtLastMuon > 5e6){
+	if(dtLastMuon > 5e6){ // 5 ms muon veto 
 		effruntime += dt;
 	}
 	
@@ -721,7 +721,7 @@ bool SelectionAlg::execute()
 		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end();){
 			double dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
 
-			if(dt_since_prompt > 1.2e-9){
+			if(dt_since_prompt > 1.0e6){ // out of 1ms window
 				LogInfo << "Expired IBD Prompt (entry " << it->promptEntry << ")" << std::endl;
 				it = m_pendingIBD.erase(it);
 				continue;
