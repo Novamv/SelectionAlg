@@ -721,7 +721,7 @@ bool SelectionAlg::execute()
 		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end();){
 			double dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
 
-			if(dt_since_prompt > 1.0e6){ // out of 1ms window
+			if(dt_since_prompt > 1.2e6){ // out of 1ms window (1.2 to be safe)
 				LogInfo << "Expired IBD Prompt (entry " << it->promptEntry << ")" << std::endl;
 				it = m_pendingIBD.erase(it);
 				continue;

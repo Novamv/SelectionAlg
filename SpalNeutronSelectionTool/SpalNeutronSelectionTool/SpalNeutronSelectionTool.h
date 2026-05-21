@@ -16,7 +16,7 @@
 class SpalNeutronSelectionTool: public ToolBase
 {
 private:
-    JM::NavBuffer* m_buf;
+    // JM::NavBuffer* m_buf;
     JM::CdLpmtCalibEvt* m_calibevt;
     JM::CdVertexRecEvt* m_recevt;
     JM::OecEvt* m_oecevt;
@@ -27,9 +27,6 @@ private:
     float FV_cut;
     float NeutronEnergyCut[2];
     float NeutronChargeCut[2];
-
-    TVector3 vecNeutron;
-
 
 public:
     SpalNeutronSelectionTool(const std::string&);

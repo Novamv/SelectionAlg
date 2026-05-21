@@ -19,8 +19,6 @@ class MuonClassificationTool: public ToolBase /*, public IMyClassificationTool *
 {
     private:
         JM::NavBuffer* m_buf;
-        JM::CdLpmtCalibEvt* m_calibevt;
-        JM::WpCalibEvt* m_wpcalibevt;
 
         EventTagSvc* m_eventTagSvc;
 

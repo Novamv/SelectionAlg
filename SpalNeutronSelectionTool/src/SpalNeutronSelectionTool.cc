@@ -8,7 +8,7 @@
 DECLARE_TOOL(SpalNeutronSelectionTool);
 
 SpalNeutronSelectionTool::SpalNeutronSelectionTool(const std::string& name)
-    : ToolBase(name), m_buf(NULL), m_calibevt(NULL), m_recevt(NULL)
+    : ToolBase(name), m_calibevt(NULL), m_recevt(NULL)
 {
     declProp("recEDMPath", recEDMPath="/Event/CdVertexRec");
     declProp("FiducialVolume", FV_cut=17200); // Fiducial Volume cut (17.2 m default)
@@ -22,12 +22,12 @@ SpalNeutronSelectionTool::~SpalNeutronSelectionTool(){}
 bool SpalNeutronSelectionTool::initialize(){
     LogInfo << "Initializing SpalNeutron classification tool..." << std::endl;
 
-    SniperDataPtr<JM::NavBuffer> navbuf(getParent(), "/Event");
-    if(navbuf.invalid()){
-        LogError << "Failed to get nav buffer!" << std::endl;
-        return false;
-    }
-    m_buf = navbuf.data();
+    // SniperDataPtr<JM::NavBuffer> navbuf(getParent(), "/Event");
+    // if(navbuf.invalid()){
+    //     LogError << "Failed to get nav buffer!" << std::endl;
+    //     return false;
+    // }
+    // m_buf = navbuf.data();
 
     // get EventTagSvc
     SniperPtr<EventTagSvc> eventTagSvc(getParent(), "EventTagSvc");
@@ -65,7 +65,7 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
 
     
     std::string lastMuTag = m_eventTagSvc->getLastMuTag();
-    if(lastMuTag != "CDMuon" && lastMuTag != "CDWPMuon") return false;
+    if(lastMuTag != "CDMuon" && lastMuTag != "CDWPMuon") return false;  // only interested in neutrons produced in LS
     
     const TTimeStamp& btime = m_eventTagSvc->getLastMuTime();
 
@@ -98,6 +98,8 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
     float recenergy = 0.0;
     float reccharge = 0.0;
     const auto& vertices = m_recevt->vertices();
+
+    TVector3 vecNeutron;
 
     for(auto vertex: vertices) {
         recenergy = vertex->energy();

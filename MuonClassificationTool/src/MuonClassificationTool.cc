@@ -6,7 +6,7 @@
 DECLARE_TOOL(MuonClassificationTool);
 
 MuonClassificationTool::MuonClassificationTool(const std::string& name)
-    : ToolBase(name), m_buf(NULL), m_calibevt(NULL), m_wpcalibevt(NULL)
+    : ToolBase(name), m_buf(NULL)
 {
     declProp("WPMuonCut", WPMuonChargeCut);
     declProp("CDMuonCut", CDMuonChargeCut);
@@ -57,21 +57,21 @@ bool MuonClassificationTool::isInDeadTime(JM::EvtNavigator* nav, JM::OecEvt* tOe
 
     JM::NavBuffer::Iterator it = navit - 1;
     while(navit != m_buf->begin() && it != m_buf->begin()){
-        --it;
-
+        
         std::string thisTag = m_eventTagSvc->getTag(it->get());
-
+        
         JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-        if(!bOecHdr) continue;
+        if(!bOecHdr) { --it; continue; }
         JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
         if(!bOecEvt){
             LogInfo << "Could not load OecEvt" << std::endl;
+            --it;
             continue;
         }
         const TTimeStamp& btime = bOecEvt->getTime();
-
+        
         double dtime = ((ttime.GetSec() -  btime.GetSec())*1000000000ULL + (ttime.GetNanoSec() - btime.GetNanoSec()));
-
+        
         if((dtime * 1e-3 > 4 && muTag == "WP") || (dtime * 1e-3 > 50 && muTag == "CD")) { // 4us dead time for WP and 50us dead time for CD
             LogInfo << "Muon candidate not in dead time" << std::endl;
             return false;
@@ -80,6 +80,7 @@ bool MuonClassificationTool::isInDeadTime(JM::EvtNavigator* nav, JM::OecEvt* tOe
             LogInfo << "Muon candidate in dead time !" << std::endl;
             return true;
         }
+        --it;
     }
 
     return false;
@@ -96,30 +97,31 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
     JM::NavBuffer::Iterator navit = m_buf->find(nav);
     const TTimeStamp& ttime = tOecEvt->getTime();
 
-    JM::NavBuffer::Iterator it = navit;
-
-    while (it != m_buf->begin()) {
-        --it;
-
+    JM::NavBuffer::Iterator it = navit - 1;
+    while (navit != m_buf->begin() && it != m_buf->begin()) {
+        
         std::string thisTag = m_eventTagSvc->getTag(it->get());
-
+        
         JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-        if(!bOecHdr) continue;
+        if(!bOecHdr) { --it; continue; }
         JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
         if(!bOecEvt){
             LogInfo << "Could not load OecEvt" << std::endl;
+            --it;
             continue;
         }
         const TTimeStamp& btime = bOecEvt->getTime();
-
+        
         double dtime = ((ttime.GetSec() - btime.GetSec())*1000000000ULL + (ttime.GetNanoSec() - btime.GetNanoSec()));
-
+        
         if(dtime * 1e-6 > 2) { // 2ms after last muon
             return false;
         }
         else if (thisTag == "WPMuon" || thisTag == "CDMuon" || thisTag == "CDWPMuon"){
             return true;
         }
+
+        --it;
     }
 
     return false;
@@ -172,9 +174,9 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
         while(navit != m_buf->begin() && it != m_buf->begin()){
             
             JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-            if(!bOecHdr) continue;
+            if(!bOecHdr) { --it; continue; }
             JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
-            if(!bOecEvt) continue;
+            if(!bOecEvt) { --it; continue; }
             
             auto bWpHdr = JM::getHeaderObject<JM::WpCalibHeader>(it->get()); 
             
@@ -199,9 +201,10 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
         while( navit != m_buf->end() && it != m_buf->end()){
             
             auto aOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-            if(!aOecHdr) continue;
+            if(!aOecHdr) { ++it; continue; }
             JM::OecEvt* aOecEvt = dynamic_cast<JM::OecEvt*>(aOecHdr->event("JM::OecEvt"));
-            
+            if(!aOecEvt) { ++it; continue; }
+
             auto aWpHdr = JM::getHeaderObject<JM::WpCalibHeader>(it->get()); 
             
             float wpcharge = aOecEvt->getTotalCharge();
