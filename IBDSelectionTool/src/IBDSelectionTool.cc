@@ -49,22 +49,11 @@ bool IBDSelectionTool::finalize(){
 }
 
 
-bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt, JM::EvtNavigator* munav) {
+bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt) {
     const TTimeStamp& ptime = pOecEvt->getTime();
 
     LogInfo << "Checking Muon veto" << std::endl;
 
-    // if(m_buf->find(munav) == m_buf->end()){
-    //     LogInfo << "Last Muon out of NavBuffer memory" <<std::endl;
-    //     return false;
-    // }
-    // auto muOechdr = JM::getHeaderObject<JM::OecHeader>(munav);
-    // if(!muOechdr){
-    //     LogInfo << "No Oec Header" << std::endl;
-    //     return false;
-    // }
-    // JM::OecEvt* muOecEvt = dynamic_cast<JM::OecEvt*>(muOechdr->event("JM::OecEvt"));
-    // const TTimeStamp& muTime = muOecEvt->getTime();
     const TTimeStamp& muTime = m_eventTagSvc->getLastMuTime();
     double dtime = (ptime.GetSec() - muTime.GetSec())*1000000000ULL + (ptime.GetNanoSec() - muTime.GetNanoSec());
 
@@ -79,8 +68,6 @@ bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt, JM::EvtNavigator* munav) {
 
 
 bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav, JM::OecEvt* pOecEvt, JM::OecEvt* dOecEvt){
-
-    JM::EvtNavigator* lastMuNav = m_eventTagSvc->getLastMuNav();
 
     LogInfo << "Prompt nav " << pnav << " Delay Nav " << dnav << std::endl;
 
@@ -125,7 +112,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             LogInfo << "Is in Energy range: " << inEnergyRange << "; Is in dt range: " << !isdt << std::endl;
 
             if (isdt) break;
-            else if(inEnergyRange && !isVetoed(oecevt, lastMuNav)) {
+            else if(inEnergyRange && !isVetoed(oecevt)) {
                 LogInfo << "Multiplicity before!" << std::endl;
                 return false;
             }
@@ -186,7 +173,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             LogInfo << "Is in Energy range: " << inEnergyRange << "; Is in dt range: " << !isdt << std::endl;
             
             if (dt*1e-6 > 1) break;
-            else if(inEnergyRange && !isVetoed(oecevt, lastMuNav)){
+            else if(inEnergyRange && !isVetoed(oecevt)){
                 LogInfo << "Multiplicity after!" << std::endl;
                 return false;
             }
@@ -205,7 +192,6 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     }
 
     std::string lastMuTag = m_eventTagSvc->getLastMuTag();
-    JM::EvtNavigator* lastMuNav = m_eventTagSvc->getLastMuNav();
     const TTimeStamp lastMuTime = m_eventTagSvc->getLastMuTime();
 
     // Load EDM
@@ -221,7 +207,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     LogInfo << "Last Mu Tag: " << lastMuTag << std::endl;
     LogInfo << "Prompt dtime from Muon " << Mudtime << std::endl;
 
-    if(!lastMuTag.empty() && isVetoed(m_oecevt, lastMuNav)) return false;
+    if(!lastMuTag.empty() && isVetoed(m_oecevt)) return false;
 
         // Reco
     auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);

@@ -38,7 +38,7 @@ private:
     int DelayEntryOffset;
     
     // Methods
-    bool isVetoed(JM::OecEvt*, JM::EvtNavigator*);
+    bool isVetoed(JM::OecEvt*);
     bool isIsolated(JM::EvtNavigator*, JM::EvtNavigator*, JM::OecEvt*, JM::OecEvt*);
     
 public:
