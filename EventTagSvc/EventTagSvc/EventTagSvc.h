@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <deque>
 
 #include "TTimeStamp.h"
 #include "TVector3.h"
@@ -37,6 +38,7 @@ class EventTagSvc : public SvcBase {
 
     private:
         std::unordered_map<uint64_t, std::string> m_tags;
+        std::deque<uint64_t> m_tagTimes;
 
         TTimeStamp m_LastMuTS{0, 0};
         std::string m_LastTag;
