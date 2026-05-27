@@ -1,6 +1,5 @@
 PKG(SpalNeutronSelectionTool
     DEPENDS
-        Utils
         BufferMemMgrLib
         OecEvent
         CalibEvent

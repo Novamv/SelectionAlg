@@ -2,7 +2,7 @@
 #include "SniperKernel/SvcFactory.h"
 #include "SniperKernel/SniperPtr.h"
 
-#include "Utils/TimeUtils.h"
+#include "EventTagSvc/TimeUtils.h"
 
 DECLARE_SERVICE(EventTagSvc);
 
@@ -28,7 +28,7 @@ bool EventTagSvc::finalize() {
 void EventTagSvc::CleanupTags(const TTimeStamp& currentTime){
 
     while(!m_tagTimes.empty()){
-        int64_t age = deltaT_ns(currentTime, m_tagTimes.front())
+        int64_t age = deltaT_ns(currentTime, m_tagTimes.front());
         if(age < 0){
             m_tagTimes.pop_front();
             continue;

@@ -1,6 +1,5 @@
 PKG(SelectionAlg
     DEPENDS
-        Utils
         SimEvent
 	ElecEvent
         CalibEvent

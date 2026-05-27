@@ -1,6 +1,5 @@
 PKG(IBDSelectionTool
     DEPENDS
-        Utils
         BufferMemMgrLib
         OecEvent
         CalibEvent
