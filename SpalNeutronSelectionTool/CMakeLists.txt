@@ -1,8 +1,9 @@
 PKG(SpalNeutronSelectionTool
     DEPENDS
-    BufferMemMgrLib
-    OecEvent
-    CalibEvent
-	EvtNavigator
-    EventTagSvc
+        Utils
+        BufferMemMgrLib
+        OecEvent
+        CalibEvent
+        EvtNavigator
+        EventTagSvc
 )

@@ -2,6 +2,7 @@
 #include "SniperKernel/SvcFactory.h"
 #include "SniperKernel/SniperPtr.h"
 
+#include "Utils/TimeUtils.h"
 
 DECLARE_SERVICE(EventTagSvc);
 
@@ -24,25 +25,33 @@ bool EventTagSvc::finalize() {
     return true;
 }
 
-void EventTagSvc::CleanupTags(uint64_t currentTime){
-    const uint64_t maxAge = 2'000'000'000ULL; // 2 seconds
+void EventTagSvc::CleanupTags(const TTimeStamp& currentTime){
 
-    while(!m_tagTimes.empty() && currentTime - m_tagTimes.front() > maxAge){
-        m_tags.erase(m_tagTimes.front());
+    while(!m_tagTimes.empty()){
+        int64_t age = deltaT_ns(currentTime, m_tagTimes.front())
+        if(age < 0){
+            m_tagTimes.pop_front();
+            continue;
+        }
+        if(age <= 2'000'000'000LL) break; // if dt < 2s don't clean
+
+        m_tags.erase(toKey(m_tagTimes.front()));
         m_tagTimes.pop_front();
     }
 }
 
 void EventTagSvc::addTag(JM::EvtNavigator* nav, const std::string& tag) {
     const TTimeStamp& TS(nav->TimeStamp());
-    uint64_t ttime = TS.GetSec()*1000000000ULL + TS.GetNanoSec();
+    int64_t key = toKey(TS);
 
-    if(m_tags.find(ttime) == m_tags.end()) m_tagTimes.push_back(ttime); // only push if new time
-    m_tags[ttime] = tag;
+    if(m_tags.find(key) == m_tags.end()) m_tagTimes.push_back(TS); // only push if new time
+    m_tags[key] = tag;
 
-    CleanupTags(ttime);
+    CleanupTags(TS);
 
-    if(tag=="CDMuon" || tag=="WPMuon" || tag=="CDWPMuon"){
+    if(tag == "CDMuon" || tag == "CDWPMuon") m_LastCDMuTS = TS;
+    if(tag == "WPMuon" || tag == "CDWPMuon") m_LastWPMuTS = TS;
+    if(tag == "CDMuon" || tag == "WPMuon" || tag == "CDWPMuon"){
         m_LastMuTag = tag;
         m_LastMuTS = TS;
     }
@@ -53,20 +62,19 @@ void EventTagSvc::addTag(JM::EvtNavigator* nav, const std::string& tag) {
 
 std::string EventTagSvc::getTag(JM::EvtNavigator* nav) {
     const TTimeStamp& TS(nav->TimeStamp());
-    uint64_t ttime = TS.GetSec()*1000000000ULL + TS.GetNanoSec();
-    
-    CleanupTags(ttime);
+    int64_t key = toKey(TS);
 
-    auto it = m_tags.find(ttime);
+    CleanupTags(TS);
+
+    auto it = m_tags.find(key);
     if (it != m_tags.end()) return it->second;
     
     LogInfo << "Tag not found." << std::endl;
-    
     return "";
 }
 
 bool EventTagSvc::hasTag(JM::EvtNavigator* nav){
     const TTimeStamp& TS(nav->TimeStamp());
-    uint64_t ttime = TS.GetSec()*1000000000ULL + TS.GetNanoSec();
-    return m_tags.find(ttime) != m_tags.end();
+    int64_t key = toKey(TS);
+    return m_tags.find(key) != m_tags.end();
 }

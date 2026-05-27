@@ -50,20 +50,17 @@ bool IBDSelectionTool::finalize(){
 
 
 bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt) {
-    const TTimeStamp& ptime = pOecEvt->getTime();
-
+    
     LogInfo << "Checking Muon veto" << std::endl;
-
+    const TTimeStamp& ptime = pOecEvt->getTime();
     const TTimeStamp& muTime = m_eventTagSvc->getLastMuTime();
-    double dtime = (ptime.GetSec() - muTime.GetSec())*1000000000ULL + (ptime.GetNanoSec() - muTime.GetNanoSec());
+
+    int64_t dtime = (int64_t)(ptime.GetSec() - muTime.GetSec())*1000000000ULL + (int64_t)(ptime.GetNanoSec() - muTime.GetNanoSec());
 
     LogInfo << "Last Muon dtime from prompt candidate: " << dtime*1e-6 << " ms" << std::endl;
-    if(dtime*1e-6 > 5){ // 5ms muon veto
-        LogInfo << "Out of veto window" << std::endl;
-        return false;
-    }
 
-    return true;
+    if(dtime < 0) return false;
+    return dtime * 1e-6 <= 5.0;
 }
 
 
@@ -300,26 +297,30 @@ bool IBDSelectionTool::isNeutronVetoed(JM::EvtNavigator* nav){
 
     for(JM::NavBuffer::Iterator it = navit - 1; it != m_buf->begin(); --it) {
         
-        JM::EvtNavigator* neutron_nav = it->get();
-        auto tag = m_eventTagSvc->getTag(neutron_nav);
+        JM::EvtNavigator* candidate = it->get();
+        
+        TTimeStamp nTime = candidate->TimeStamp();
+        int64_t dtime = (pTime.GetSec() - nTime.GetSec()) * 1000000000LL
+                      + (pTime.GetNanoSec() - nTime.GetNanoSec());
+        
+        if(dtime < 0) continue;
+        if(dtime >= 1'200'000'000LL) break; // beyond 1.2 s, stop looking
 
-        auto nrechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
+
+        std::string tag = m_eventTagSvc->getTag(candidate);
+        if(tag != "SpalNeutron") continue;
+
+        //Load neutron vertex
+        auto nrechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(candidate, recEDMPath);
         if(!nrechdr) return false;
         JM::CdVertexRecEvt* nrecevt = nrechdr->event();
 
         const auto nVtx = nrecevt->getVertex(0); 
         TVector3 n_vertex(nVtx->x(), nVtx->y(), nVtx->z());
-
-        TTimeStamp nTime = neutron_nav->TimeStamp();
-        double dt = (pTime.GetSec() - nTime.GetSec()) * 1000000000ULL + (pTime.GetNanoSec() - nTime.GetNanoSec());
         double dR = (p_vertex - n_vertex).Mag();
 
-        if(tag != "SpalNeutron") continue;
-        if(dt >= 1.2e9) return false; // If dt > 1.2 s out of window
-        if(tag == "SpalNeutron" && dt < 1.2e9 && dR < 4000) return true;
-        
+        if(dR < 4000) return true;   
     }
-
     return false;
 }
 

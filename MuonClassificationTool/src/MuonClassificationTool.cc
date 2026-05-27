@@ -52,38 +52,18 @@ bool MuonClassificationTool::isInDeadTime(JM::EvtNavigator* nav, JM::OecEvt* tOe
     }
 
     //GetNavBuffer iterator
-    JM::NavBuffer::Iterator navit = m_buf->find(nav);
     const TTimeStamp& ttime = tOecEvt->getTime();
 
-    JM::NavBuffer::Iterator it = navit - 1;
-    while(navit != m_buf->begin() && it != m_buf->begin()){
-        
-        std::string thisTag = m_eventTagSvc->getTag(it->get());
-        
-        JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-        if(!bOecHdr) { --it; continue; }
-        JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
-        if(!bOecEvt){
-            LogInfo << "Could not load OecEvt" << std::endl;
-            --it;
-            continue;
-        }
-        const TTimeStamp& btime = bOecEvt->getTime();
-        
-        double dtime = ((ttime.GetSec() -  btime.GetSec())*1000000000ULL + (ttime.GetNanoSec() - btime.GetNanoSec()));
-        
-        if((dtime * 1e-3 > 4 && muTag == "WP") || (dtime * 1e-3 > 50 && muTag == "CD")) { // 4us dead time for WP and 50us dead time for CD
-            LogInfo << "Muon candidate not in dead time" << std::endl;
-            return false;
-        }
-        else if( ((thisTag == "WPMuon" || thisTag == "CDWPMuon") && muTag == "WP") || ((thisTag == "CDMuon" || thisTag == "CDWPMuon") && muTag == "CD") ) {
-            LogInfo << "Muon candidate in dead time !" << std::endl;
-            return true;
-        }
-        --it;
-    }
+    TTimeStamp lastMuTime = (muTag == "WP") ? m_eventTagSvc->getLastWPMuTime() : m_eventTagSvc->getLastCDMuTime();
 
-    return false;
+    int64_t dtime = (ttime.GetSec() - lastMuTime.GetSec()) * 1000000000LL
+                    + (ttime.GetNanoSec() - lastMuTime.GetNanoSec());
+
+    if(dtime < 0) return false;
+
+    int64_t deadTime = (muTag == "WP") ? 4'000LL : 50'000LL; // 4 us or 50 us in ns
+    
+    return dtime < deadTime;
 
 }
 

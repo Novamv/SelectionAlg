@@ -1,9 +1,10 @@
 PKG(IBDSelectionTool
     DEPENDS
-    BufferMemMgrLib
-    OecEvent
-    CalibEvent
-    RecEvent
-	EvtNavigator
-    EventTagSvc
+        Utils
+        BufferMemMgrLib
+        OecEvent
+        CalibEvent
+        RecEvent
+        EvtNavigator
+        EventTagSvc
 )

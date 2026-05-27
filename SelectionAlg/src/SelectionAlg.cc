@@ -233,7 +233,8 @@ bool SelectionAlg::finalize()
 
 bool SelectionAlg::execute()
 {
-	LogInfo << "executing: " << m_iEvt++ << std::endl;
+	++m_iEvt;
+	LogInfo << "executing: " << m_iEvt << std::endl;
 
 	// gDirectory->pwd();
 
@@ -392,11 +393,7 @@ bool SelectionAlg::execute()
 
 	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
-	if(m_iEvt == m_DelayEvt) {
-		LogInfo << "Filling correponding delay event" << std::endl;
-		m_Tag = m_eventTagsvc->getTag(nav);
-	}
-	else if(dtLastMuon > 50e3 && m_MuClassifier->isMuon(nav)){ //50 us dead time
+	if(dtLastMuon > 50e3 && m_MuClassifier->isMuon(nav)){ //50 us dead time
 		tLastMuon = theTime;
 		m_Tag = m_eventTagsvc->getTag(nav);
 		if(m_Tag == "CDMuon") nCDMuons++;
@@ -409,7 +406,6 @@ bool SelectionAlg::execute()
 	}
 	else if(dtLastMuon > 5e6 && m_IBDClassifier->isPrompt(nav)) { // If IBD out of Muon veto fill prompt information
 		m_Tag = m_eventTagsvc->getTag(nav);
-		m_DelayEvt = m_iEvt + m_IBDClassifier->getDelayOffset();
 		nIBD++;
 	}
 
@@ -566,8 +562,7 @@ bool SelectionAlg::execute()
 			m_eventTagsvc->addTag(nav, "SpalNeutron");
 			m_Tag = "SpalNeutron";
 		}
-		// m_HitTime_mean = hTime->GetMean();
-		// m_HitTime_std = hTime->GetRMS();
+
 
 		// Fill Hit level information only for IBD tagged events
 		if(myIBD || m_OECtag != ""){
@@ -702,6 +697,16 @@ bool SelectionAlg::execute()
 
 // =============  Fill Trees and check pending Prompts  =============
 
+	for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end(); ) {
+		int64_t dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
+		if(dt_since_prompt > 1'000'000LL) { // 1.0 ms
+			LogInfo << "Expired IBD Prompt (entry " << it->promptEntry << ")" << std::endl;
+			it = m_pendingIBD.erase(it);
+			continue;
+		}
+		++it;
+	}
+
 	if(m_Tag == "Prompt"){
 		PendingIBD cand;
 		cand.promptEntry 		= m_iEvt;
@@ -719,14 +724,8 @@ bool SelectionAlg::execute()
 	}
 	else{
 		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end();){
-			double dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
-
-			if(dt_since_prompt > 1.2e6){ // out of 1ms window (1.2 to be safe)
-				LogInfo << "Expired IBD Prompt (entry " << it->promptEntry << ")" << std::endl;
-				it = m_pendingIBD.erase(it);
-				continue;
-			}
-
+			
+			int64_t dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
 			if(m_iEvt == it->promptEntry + it->delayEntryOffset){
 				LogInfo << "IBD delay match prompt entry" << std::endl;
 				m_Tag = "Delay";
