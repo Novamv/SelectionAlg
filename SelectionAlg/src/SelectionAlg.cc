@@ -391,6 +391,16 @@ bool SelectionAlg::execute()
 // =============  Run Classification  =============
 // ================================================
 
+	// Quick check for Delay event 
+	for (auto& cand : m_pendingIBD){
+		int64_t dt = deltaT_ns(theTime, cand.pTimeStamp);
+		if(dt > 1'000'000LL) continue;  // will be expired later
+		if(m_iEvt == cand.promptEntry + cand.delayEntryOffset) {
+			m_Tag = "Delay";
+			break;
+    	}
+	}
+
 	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
 	if(dtLastMuon > 50e3 && m_MuClassifier->isMuon(nav)){ //50 us dead time
@@ -406,6 +416,7 @@ bool SelectionAlg::execute()
 	}
 	else if(dtLastMuon > 5e6 && m_IBDClassifier->isPrompt(nav)) { // If IBD out of Muon veto fill prompt information
 		m_Tag = m_eventTagsvc->getTag(nav);
+		m_DelayEvt = m_iEvt + m_IBDClassifier->getDelayOffset();
 		nIBD++;
 	}
 
@@ -698,7 +709,7 @@ bool SelectionAlg::execute()
 // =============  Fill Trees and check pending Prompts  =============
 
 	for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end(); ) {
-		int64_t dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
+		int64_t dt_since_prompt = deltaT_ns(theTime, it->pTimeStamp);
 		if(dt_since_prompt > 1'000'000LL) { // 1.0 ms
 			LogInfo << "Expired IBD Prompt (entry " << it->promptEntry << ")" << std::endl;
 			it = m_pendingIBD.erase(it);
@@ -711,7 +722,7 @@ bool SelectionAlg::execute()
 		PendingIBD cand;
 		cand.promptEntry 		= m_iEvt;
 		cand.delayEntryOffset 	= m_IBDClassifier->getDelayOffset();
-		cand.pTimeStamp 		= theTime.GetSec()*1000000000ULL + theTime.GetNanoSec();
+		cand.pTimeStamp 		= theTime;
 		cand.pHitTimeTOF 		= m_HitTimeCalibTOF;
 		cand.pEnergy 			= m_RecE;
 		cand.pX 				= m_RecX; 
@@ -724,8 +735,8 @@ bool SelectionAlg::execute()
 	}
 	else{
 		for(auto it = m_pendingIBD.begin(); it != m_pendingIBD.end();){
-			
-			int64_t dt_since_prompt = theTime.GetSec() * 1000000000ULL + theTime.GetNanoSec() - it->pTimeStamp;
+
+			int64_t dt_since_prompt = deltaT_ns(theTime, it->pTimeStamp);
 			if(m_iEvt == it->promptEntry + it->delayEntryOffset){
 				LogInfo << "IBD delay match prompt entry" << std::endl;
 				m_Tag = "Delay";
@@ -742,7 +753,7 @@ bool SelectionAlg::execute()
                 m_pair.pY          = it->pY;
                 m_pair.pZ          = it->pZ;
                 m_pair.pNPE        = it->pNPE;
-                m_pair.pTimeStamp  = it->pTimeStamp;
+                m_pair.pTime	   = toKey(it->pTimeStamp);
 				m_pair.pHitTimeTOF = it->pHitTimeTOF;
 
 				m_pair.delayEntry  = m_iEvt;
@@ -751,7 +762,7 @@ bool SelectionAlg::execute()
                 m_pair.dY          = m_RecY;
                 m_pair.dZ          = m_RecZ;
                 m_pair.dNPE        = m_ChargeTotLPMT;
-                m_pair.dTimeStamp  = theTime.GetSec()*1000000000ULL + theTime.GetNanoSec();
+                m_pair.dTime	   = toKey(theTime);
 				m_pair.dHitTimeTOF = m_HitTimeCalibTOF;
 				
 				m_pair.neutronVeto = it->NeutronVeto;
@@ -860,7 +871,7 @@ bool SelectionAlg::Book_tree()
 	m_ibdtree->Branch("pY", 		 &m_pair.pY);
 	m_ibdtree->Branch("pZ", 		 &m_pair.pZ);
 	m_ibdtree->Branch("pNPE", 		 &m_pair.pNPE);
-	m_ibdtree->Branch("pTimeStamp",  &m_pair.pTimeStamp, "pTimeStamp/l");
+	m_ibdtree->Branch("pTimeStamp",  &m_pair.pTime, "pTimeStamp/l");
 	m_ibdtree->Branch("pHitTimeTOF", &m_pair.pHitTimeTOF);
 	//Delay
 	m_ibdtree->Branch("dEntry", 	 &m_pair.delayEntry);
@@ -869,7 +880,7 @@ bool SelectionAlg::Book_tree()
 	m_ibdtree->Branch("dY", 	  	 &m_pair.dY);
 	m_ibdtree->Branch("dZ", 	  	 &m_pair.dZ);
 	m_ibdtree->Branch("dNPE",	  	 &m_pair.dNPE);
-	m_ibdtree->Branch("dTimeStamp",  &m_pair.dTimeStamp, "dTimeStamp/l");
+	m_ibdtree->Branch("dTimeStamp",  &m_pair.dTime, "dTimeStamp/l");
 	m_ibdtree->Branch("dHitTimeTOF", &m_pair.dHitTimeTOF);
 
 	m_ibdtree->Branch("NeutronVeto", &m_pair.neutronVeto);

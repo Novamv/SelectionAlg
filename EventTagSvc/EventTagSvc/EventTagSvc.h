@@ -50,8 +50,6 @@ class EventTagSvc : public SvcBase {
         std::string m_LastTag;
         std::string m_LastMuTag;
 
-        static int64_t toKey(const TTimeStamp& ts) { return (int64_t)(ts.GetSec() * 1000000000LL + ts.GetNanoSec());}
-        
         // ── Update Tag list ─────────────────────────────────────────
         void CleanupTags(const TTimeStamp& currentTime);
 

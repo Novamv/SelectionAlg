@@ -15,7 +15,7 @@ def get_parser():
     parser.add_argument("--input-correlations-list", default=None, help="Name of the correlation files")
     parser.add_argument("--output", default="sample_plain.root", help="output file name suffix")
     parser.add_argument("--loglevel", default="Info", choices=["Test", "Debug", "Info", "Warn", "Error", "Fatal"], help="Set Log level")
-    parser.add_argument("--time-window", default="0.05", type = float, help="Time window of events in seconds")
+    parser.add_argument("--time-window", default="2.0", type = float, help="Time window of events in seconds")
     parser.add_argument("--enableElec", dest="enableElec", action="store_true")
     parser.add_argument("--disableElec", dest="enableElec", action="store_false")
     parser.set_defaults(enableElec=False)
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     import BufferMemMgr
     bufMgr = task.createSvc("BufferMemMgr")
-    bufMgr.property("TimeWindow").set([0.0-args.time_window, args.time_window]) #[-1ms; 1ms]
+    bufMgr.property("TimeWindow").set([0.0-args.time_window, args.time_window]) # i.e [-1s; 1s]
 
 
     import SpmtElecConfigSvc

@@ -18,6 +18,7 @@
 #include "OECTagID/OECTagID.h"
 
 #include "EventTagSvc/EventTagSvc.h"
+#include "EventTagSvc/TimeUtils.h"
 #include "MuonClassificationTool/MuonClassificationTool.h"
 #include "SpalNeutronSelectionTool/SpalNeutronSelectionTool.h"
 #include "IBDSelectionTool/IBDSelectionTool.h"
@@ -45,7 +46,7 @@ struct PendingIBD {
   float   pEnergy;
   float   pX, pY, pZ;
   float   pNPE;
-  uint64_t pTimeStamp;      // ns
+  TTimeStamp pTimeStamp;      // ns
   std::vector<double> pHitTimeTOF;
 
   int NeutronVeto;
@@ -60,14 +61,14 @@ struct IBDPair {
   float   pEnergy;
   float   pX, pY, pZ;
   float   pNPE;
-  uint64_t pTimeStamp;
+  int64_t pTime;
   std::vector<double> pHitTimeTOF;
 
   // --- Delay ---
   float   dEnergy;
   float   dX, dY, dZ;
   float   dNPE;
-  uint64_t dTimeStamp;
+  int64_t dTime;
   std::vector<double> dHitTimeTOF;
 
 
