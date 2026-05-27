@@ -55,7 +55,7 @@ bool IBDSelectionTool::isVetoed(JM::OecEvt* pOecEvt) {
     const TTimeStamp& ptime = pOecEvt->getTime();
     const TTimeStamp& muTime = m_eventTagSvc->getLastMuTime();
 
-    int64_t dtime = (int64_t)(ptime.GetSec() - muTime.GetSec())*1000000000ULL + (int64_t)(ptime.GetNanoSec() - muTime.GetNanoSec());
+    int64_t dtime = deltaT_ns(ptime, muTime);
 
     LogInfo << "Last Muon dtime from prompt candidate: " << dtime*1e-6 << " ms" << std::endl;
 
@@ -91,7 +91,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             }
     
             const TTimeStamp& time = oecevt->getTime();
-            double dt = (ptime.GetSec() - time.GetSec())*1000000000ULL + (ptime.GetNanoSec() - time.GetNanoSec());
+            int64_t dt = deltaT_ns(ptime, time);
     
             auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
             if(!rechdr) {
@@ -154,7 +154,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
                 LogInfo << "Could not load OecEvt" << std::endl;
             }
             const TTimeStamp& time = oecevt->getTime();
-            double dt = (time.GetSec() - dtime.GetSec())*1000000000ULL + (time.GetNanoSec() - dtime.GetNanoSec());
+            int64_t dt = deltaT_ns(time, dtime);
     
             auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
             if(!rechdr) continue;
@@ -164,12 +164,12 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             float energy = vertex->energy();
 
             bool inEnergyRange = energy >= DelayEnergyCut[0] && energy <= PromptEnergyCut[1];
-            bool isdt = dt*1e-6 > 1;
+            bool isdt = dt*1e-6 > 1.0;
             
             LogInfo << "Energy: " << energy << " dtime: " << dt*1e-6 << std::endl;
             LogInfo << "Is in Energy range: " << inEnergyRange << "; Is in dt range: " << !isdt << std::endl;
             
-            if (dt*1e-6 > 1) break;
+            if (dt*1e-6 > 1.0) break;
             else if(inEnergyRange && !isVetoed(oecevt)){
                 LogInfo << "Multiplicity after!" << std::endl;
                 return false;
@@ -199,7 +199,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     if(!m_oecevt) return false;
     
     const TTimeStamp& ptime = m_oecevt->getTime();
-    double Mudtime = (ptime.GetSec() - lastMuTime.GetSec())*1000000000ULL + (ptime.GetNanoSec() - lastMuTime.GetNanoSec());
+    int64_t Mudtime = deltaT_ns(ptime, lastMuTime);
 
     LogInfo << "Last Mu Tag: " << lastMuTag << std::endl;
     LogInfo << "Prompt dtime from Muon " << Mudtime << std::endl;
@@ -237,9 +237,10 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
             
             const TTimeStamp& dtime = dOecEvt->getTime();
 
-            double dt = (dtime.GetSec() - ptime.GetSec())*1000000000ULL + (dtime.GetNanoSec() - ptime.GetNanoSec());
+            int64_t dt = deltaT_ns(dtime, ptime);
             
             LogInfo << "dtime prompt/delay candidate: " << dnav << " dtime: " << dt*1e-6 << " ms" << std::endl;
+            // pair them if 5us < dt < 1ms
             if(dt*1e-3 <= 5) continue;
             if(dt*1e-6 > 1) return false; // if dt > 1ms no delay
             offset++;
@@ -300,12 +301,10 @@ bool IBDSelectionTool::isNeutronVetoed(JM::EvtNavigator* nav){
         JM::EvtNavigator* candidate = it->get();
         
         TTimeStamp nTime = candidate->TimeStamp();
-        int64_t dtime = (pTime.GetSec() - nTime.GetSec()) * 1000000000LL
-                      + (pTime.GetNanoSec() - nTime.GetNanoSec());
+        int64_t dtime = deltaT_ns(pTime, nTime);
         
         if(dtime < 0) continue;
         if(dtime >= 1'200'000'000LL) break; // beyond 1.2 s, stop looking
-
 
         std::string tag = m_eventTagSvc->getTag(candidate);
         if(tag != "SpalNeutron") continue;

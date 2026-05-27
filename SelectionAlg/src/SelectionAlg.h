@@ -122,16 +122,19 @@ private :
   std::vector<std::string> m_classifiernames;
 
   // Some useful variables
-  TTimeStamp FirstTime, theTime, PreviousTime, tLastMuon;
-  TTimeStamp prevCDTime;
-  TTimeStamp prevWPTime;
+  TTimeStamp theTime{0, 0}; 
+  TTimeStamp FirstTime{0, 0};
+  TTimeStamp PreviousTime{0, 0}; 
+  TTimeStamp tLastMuon{0, 0};
+  TTimeStamp prevCDTime{0, 0};
+  TTimeStamp prevWPTime{0, 0};
   int m_DelayEvt;
   std::vector<PendingIBD> m_pendingIBD;
 
   // skipping
   SkipReason skipReason = SkipReason::None;
   TTimeStamp skipStartTime;
-  double dt_skip;
+  int64_t dt_skip;
   double dtCD = 0.0;
   double dtWP = 0.0;
 
@@ -151,11 +154,9 @@ private :
   int m_iEvt;
   TString m_Tag, m_PrevTag;
 
-  uint32_t m_EvtID;
-  uint64_t m_AssembleID;
   int m_iRun;
   long long m_Trigger;
-  uint64_t m_TimeStamp;
+  int64_t m_TimeStamp;
 
   std::vector<std::string> m_TriggerName;
 

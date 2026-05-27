@@ -22,13 +22,6 @@ SpalNeutronSelectionTool::~SpalNeutronSelectionTool(){}
 bool SpalNeutronSelectionTool::initialize(){
     LogInfo << "Initializing SpalNeutron classification tool..." << std::endl;
 
-    // SniperDataPtr<JM::NavBuffer> navbuf(getParent(), "/Event");
-    // if(navbuf.invalid()){
-    //     LogError << "Failed to get nav buffer!" << std::endl;
-    //     return false;
-    // }
-    // m_buf = navbuf.data();
-
     // get EventTagSvc
     SniperPtr<EventTagSvc> eventTagSvc(getParent(), "EventTagSvc");
     if (!eventTagSvc.valid()) {
@@ -36,7 +29,6 @@ bool SpalNeutronSelectionTool::initialize(){
         return false;
     }
     m_eventTagSvc = eventTagSvc.data();
-
     return true;
 }
 
@@ -72,8 +64,8 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
 
     // ------- Check if within dt window -------
 
-    double dtime = (ttime.GetSec() - btime.GetSec())*1000000000ULL + (ttime.GetNanoSec() - btime.GetNanoSec()); //ns
-    if(!(dtime > 20e3 && dtime < 2e6)){ // 20us < dt < 2ms
+    int64_t dtime = deltaT_ns(ttime, btime); //ns
+    if(!(dtime > 20'000LL && dtime < 2'000'000LL)){ // 20us < dt < 2ms
         return false;
     }
 

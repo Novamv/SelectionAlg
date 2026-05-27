@@ -4,6 +4,7 @@
 #include "SniperKernel/ToolBase.h"
 
 #include "EventTagSvc/EventTagSvc.h"
+#include "EventTagSvc/TimeUtils.h"
 #include "EvtNavigator/NavBuffer.h"
 #include "EvtNavigator/EvtNavHelper.h"
 

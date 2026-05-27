@@ -56,15 +56,12 @@ bool MuonClassificationTool::isInDeadTime(JM::EvtNavigator* nav, JM::OecEvt* tOe
 
     TTimeStamp lastMuTime = (muTag == "WP") ? m_eventTagSvc->getLastWPMuTime() : m_eventTagSvc->getLastCDMuTime();
 
-    int64_t dtime = (ttime.GetSec() - lastMuTime.GetSec()) * 1000000000LL
-                    + (ttime.GetNanoSec() - lastMuTime.GetNanoSec());
-
+    int64_t dtime = deltaT_ns(ttime, lastMuTime);
     if(dtime < 0) return false;
 
     int64_t deadTime = (muTag == "WP") ? 4'000LL : 50'000LL; // 4 us or 50 us in ns
     
     return dtime < deadTime;
-
 }
 
 bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt) {
@@ -92,15 +89,13 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
         }
         const TTimeStamp& btime = bOecEvt->getTime();
         
-        double dtime = ((ttime.GetSec() - btime.GetSec())*1000000000ULL + (ttime.GetNanoSec() - btime.GetNanoSec()));
-        
+        int64_t dtime = deltaT_ns(ttime, btime);
         if(dtime * 1e-6 > 2) { // 2ms after last muon
             return false;
         }
         else if (thisTag == "WPMuon" || thisTag == "CDMuon" || thisTag == "CDWPMuon"){
             return true;
         }
-
         --it;
     }
 
@@ -162,7 +157,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
             
             float wpcharge = bOecEvt->getTotalCharge();
             const TTimeStamp& btime = bOecEvt->getTime();
-            double dtime = ((ttime.GetSec() -  btime.GetSec())*1000000000ULL + (ttime.GetNanoSec() - btime.GetNanoSec()));
+            int64_t dtime = deltaT_ns(ttime, btime);
             
             if(dtime > 500) break;
             else if (bWpHdr && wpcharge > 400 ){
@@ -189,7 +184,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
             
             float wpcharge = aOecEvt->getTotalCharge();
             const TTimeStamp& atime = aOecEvt->getTime();
-            double dtime = ((atime.GetSec() -  ttime.GetSec())*1000000000ULL + (atime.GetNanoSec() - ttime.GetNanoSec()));
+            int64_t dtime = deltaT_ns(atime, ttime);
             
             
             if(dtime > 500) break;

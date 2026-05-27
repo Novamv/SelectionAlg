@@ -5,6 +5,7 @@
 
 // #include "MyClassification/src/IMyClassification.h"
 #include "EventTagSvc/EventTagSvc.h"
+#include "EventTagSvc/TimeUtils.h"
 
 #include "EvtNavigator/NavBuffer.h"
 #include "EvtNavigator/EvtNavigator.h"

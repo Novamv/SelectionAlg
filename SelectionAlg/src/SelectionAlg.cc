@@ -262,26 +262,26 @@ bool SelectionAlg::execute()
 	const auto& paths = nav->getPath();
 	const auto& refs = nav->getRef();
 	
-	LogInfo << "Detector type is  " <<nav->getDetectorType()<<std::endl;
-	LogInfo << "Start to Explore SmartRef: " << std::endl;
-	LogInfo << "Size of paths: " << paths.size() << std::endl;
-	LogInfo << "Size of refs: " << refs.size() << std::endl;
+	LogDebug << "Detector type is  " <<nav->getDetectorType()<<std::endl;
+	LogDebug << "Start to Explore SmartRef: " << std::endl;
+	LogDebug << "Size of paths: " << paths.size() << std::endl;
+	LogDebug << "Size of refs: " << refs.size() << std::endl;
 	
 	for (size_t i = 0; i < paths.size(); ++i) {
-		LogInfo << refs[i]<<" -> ref: " << std::endl;
+		LogDebug << refs[i]<<" -> ref: " << std::endl;
 		const std::string& path = paths[i];
 		JM::SmartRef* ref = refs[i];
 		JM::EventObject* evtobj = ref->GetObject();
 		
-		LogInfo << " path: " << path
+		LogDebug << " path: " << path
 		<< " ref->entry(): " << ref->entry()
 		<< " evtobj: " << evtobj;
 		
 		if (path=="/Event/Sim") {
 			auto hdr = dynamic_cast<JM::SimHeader*>(evtobj);
-			LogInfo <<i<<" SimHeader: " << hdr;
+			LogDebug <<i<<" SimHeader: " << hdr;
 		}
-		LogInfo << std::endl;
+		LogDebug << std::endl;
 	}
 
 	clearAllTrees(); //Clearing all trees variables
@@ -299,12 +299,13 @@ bool SelectionAlg::execute()
 		FirstTime = theTime;
 		dtCD = 0;
 		dtWP = 0;
+		
 	}
 
 	// =============  Fast skip  =============
 	if(skipReason != SkipReason::None){
 		
-		dt_skip = (theTime.GetSec() - skipStartTime.GetSec()) * 1000000000ULL + (theTime.GetNanoSec() - skipStartTime.GetNanoSec());
+		dt_skip = deltaT_ns(theTime, skipStartTime);
 
 		bool skip1 = (skipReason == SkipReason::StartOfFile || skipReason == SkipReason::BigGap) && dt_skip < 1.2e9; //1.2 s skip if Start of file of big gap
 		bool skip2 = skipReason == SkipReason::MissingHeader && dt_skip < 5e6; // 5 ms skip if no headers
@@ -319,10 +320,10 @@ bool SelectionAlg::execute()
 
 	// =============  Compute dt  =============
 
-	double globalTime = (theTime.GetSec() - FirstTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - FirstTime.GetNanoSec());
+	int64_t globalTime = deltaT_ns(theTime, FirstTime);
 
-	int64_t dt = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
-	double dtLastMuon = (theTime.GetSec() - tLastMuon.GetSec())*1000000000ULL + (theTime.GetNanoSec() - tLastMuon.GetNanoSec());
+	int64_t dt = deltaT_ns(theTime, PreviousTime);
+	int64_t dtLastMuon = deltaT_ns(theTime, tLastMuon);
 
 	LogInfo << "Global time: " << globalTime << std::endl;
 
@@ -345,13 +346,13 @@ bool SelectionAlg::execute()
 	// =============  Check	for big gaps  =============
 	
 	if(calibheaderLPMT){
-		if(dtCD == 0) dtCD = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
-		else dtCD = (theTime.GetSec() - prevCDTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - prevCDTime.GetNanoSec());
+		if(dtCD == 0) dtCD = deltaT_ns(theTime, PreviousTime);
+		else dtCD = deltaT_ns(theTime, prevCDTime);
 		
-		LogInfo << "dtCD: " << dtCD << std::endl;
+		LogDebug << "dtCD: " << dtCD << std::endl;
 		prevCDTime = theTime;
 
-		if(dtCD > 50e6) {
+		if(dtCD * 1e-6 > 50.0) {
 			skipReason = SkipReason::BigGap;
 			skipStartTime = theTime;
 			PreviousTime = theTime;
@@ -360,17 +361,17 @@ bool SelectionAlg::execute()
 		}
 	}
 	if(calibheaderWP){
-		if(dtWP == 0) dtWP = (theTime.GetSec() - PreviousTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - PreviousTime.GetNanoSec());
-		else dtWP = (theTime.GetSec() - prevWPTime.GetSec())*1000000000ULL + (theTime.GetNanoSec() - prevWPTime.GetNanoSec());
+		if(dtWP == 0) dtWP = deltaT_ns(theTime, PreviousTime);
+		else dtWP = deltaT_ns(theTime, prevWPTime);
 		
-		LogInfo << "dtWP: " << dtWP << std::endl;
+		LogDebug << "dtWP: " << dtWP << std::endl;
 		prevWPTime = theTime;
 		
-		if(dtWP > 70e6) {
+		if(dtWP * 1e-6 > 70.0) {
 			skipReason = SkipReason::BigGap;
 			skipStartTime = theTime;
 			PreviousTime = theTime;
-			LogInfo << "New skip reason: WP gap > 50 ms" << std::endl;
+			LogInfo << "New skip reason: WP gap > 70 ms" << std::endl;
 			return true;
 		}
 	}
@@ -378,14 +379,14 @@ bool SelectionAlg::execute()
 	// =============  Runtime counting  =============
 	
 	runtime += dt;
-	if(dtLastMuon > 5e6){ // 5 ms muon veto 
+	if(dtLastMuon * 1e-6 > 5.0){ // 5 ms muon veto 
 		effruntime += dt;
 	}
 	
 	PreviousTime = theTime;
 	
-	LogInfo << "Run Time: " << runtime << std::endl;
-	LogInfo << "Effective Run Time: " << effruntime << std::endl;
+	LogDebug << "Run Time: " << runtime << std::endl;
+	LogDebug << "Effective Run Time: " << effruntime << std::endl;
 
 // ================================================
 // =============  Run Classification  =============
@@ -403,18 +404,18 @@ bool SelectionAlg::execute()
 
 	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
-	if(dtLastMuon > 50e3 && m_MuClassifier->isMuon(nav)){ //50 us dead time
+	if(dtLastMuon * 1e-6 > 50.0 && m_MuClassifier->isMuon(nav)){ //50 us dead time
 		tLastMuon = theTime;
 		m_Tag = m_eventTagsvc->getTag(nav);
 		if(m_Tag == "CDMuon") nCDMuons++;
 		if(m_Tag == "CDWPMuon") nCDWPMuons++;
 		if(m_Tag == "WPMuon") nWPMuons++;
 	}
-	else if((dtLastMuon > 20e3 && dtLastMuon < 2e6) && m_NeutronClassifier->isSpalNeutron(nav)){
+	else if((dtLastMuon * 1e-3 > 20.0 && dtLastMuon * 1e-6 < 2.0) && m_NeutronClassifier->isSpalNeutron(nav)){
 		m_Tag = m_eventTagsvc->getTag(nav);
 		nNeutrons++;
 	}
-	else if(dtLastMuon > 5e6 && m_IBDClassifier->isPrompt(nav)) { // If IBD out of Muon veto fill prompt information
+	else if(dtLastMuon * 1e-6 > 5.0 && m_IBDClassifier->isPrompt(nav)) { // If IBD out of Muon veto fill prompt information
 		m_Tag = m_eventTagsvc->getTag(nav);
 		m_DelayEvt = m_iEvt + m_IBDClassifier->getDelayOffset();
 		nIBD++;
@@ -434,46 +435,46 @@ bool SelectionAlg::execute()
 	auto simheader = JM::getHeaderObject<JM::SimHeader>(nav);
 	if(simheader){
 		simevent = (JM::SimEvt*)simheader->event();
-		LogInfo << "SimEvent Read in: " << simevent << std::endl;
-		LogInfo << "SimEvent Track: " << simevent->getTracksVec().size() << std::endl;
-		LogInfo << "SimEvent Hits: " << simevent->getCDHitsVec().size() << std::endl;
+		LogDebug << "SimEvent Read in: " << simevent << std::endl;
+		LogDebug << "SimEvent Track: " << simevent->getTracksVec().size() << std::endl;
+		LogDebug << "SimEvent Hits: " << simevent->getCDHitsVec().size() << std::endl;
 	}
 
 	// auto recheader = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
 	if (recheader) {
 	  recevent = recheader->event();
-	  LogInfo << "RecEvent Read in: " << recevent << std::endl;
+	  LogDebug << "RecEvent Read in: " << recevent << std::endl;
 	}
 	auto trackheader = JM::getHeaderObject<JM::CdTrackRecHeader>(nav, "/Event/CdTrackRecClassify");
 	if(trackheader){
 		trackrecevt = trackheader->event();
-		LogInfo << "TrackRecEvt Read in: " << trackrecevt << std::endl;
+		LogDebug << "TrackRecEvt Read in: " << trackrecevt << std::endl;
 	}
 	// auto calibheaderLPMT = JM::getHeaderObject<JM::CdLpmtCalibHeader>(nav);
 	if (calibheaderLPMT) {
 	  calibeventLPMT = calibheaderLPMT->event();
-	  LogInfo << "CalibEventLPMT Read in: " << calibeventLPMT << std::endl;
+	  LogDebug << "CalibEventLPMT Read in: " << calibeventLPMT << std::endl;
 	}
 	auto calibheaderSPMT = JM::getHeaderObject<JM::CdSpmtCalibHeader>(nav);
 	if (calibheaderSPMT) {
 	  calibeventSPMT = calibheaderSPMT->event();
-	  LogInfo << "CalibEventSPMT Read in: " << calibeventSPMT << std::endl;
+	  LogDebug << "CalibEventSPMT Read in: " << calibeventSPMT << std::endl;
 	}
 	// auto calibheaderWP = JM::getHeaderObject<JM::WpCalibHeader>(nav);
 	if (calibheaderWP) {
 	  calibeventWP = calibheaderWP->event();
-	  LogInfo << "CalibEventWP Read in: " << calibeventWP << std::endl;
+	  LogDebug << "CalibEventWP Read in: " << calibeventWP << std::endl;
 	}
 
 	auto triggerheader = JM::getHeaderObject<JM::CdTriggerHeader>(nav);
 	if(triggerheader){triggerevent = triggerheader->event();
-	  LogInfo <<"CD TriggerEvent Read in: " << triggerevent <<std::endl;
+	  LogDebug <<"CD TriggerEvent Read in: " << triggerevent <<std::endl;
 	}
 
 	auto OEChdr = JM::getHeaderObject<JM::OecHeader>(nav);
 	if(OEChdr){
 		oecevt = dynamic_cast<JM::OecEvt*>(OEChdr->event("JM::OecEvt"));
-		LogInfo <<"OEC Event Read in: " << oecevt <<std::endl;
+		LogDebug <<"OEC Event Read in: " << oecevt <<std::endl;
 	}
 
 	// ---------------------- Set all trees variables ----------------------
@@ -509,15 +510,9 @@ bool SelectionAlg::execute()
 
 	const auto& timestamp = nav->TimeStamp();
 	int RunNumber = nav->RunID();
-	uint32_t EventNumber = nav->EventID();
 	m_iRun = RunNumber;
-	m_EvtID = EventNumber;
-	m_AssembleID = nav->AssembleID();
-	unsigned long long tempTS =  timestamp.GetSec()*1e9 + timestamp.GetNanoSec() ;
-	uint64_t TimeRef_2 =  timestamp.GetSec()*1000000000ULL + timestamp.GetNanoSec() ;
-	unsigned long long TimeStampLPMT = (tempTS&0xFFFFFFFF00000000) ;
 
-	m_TimeStamp = TimeRef_2;
+	m_TimeStamp = toKey(timestamp);
 
 	double ChargeTot=0;
 	std::vector<int> tempPmtIds;

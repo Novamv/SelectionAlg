@@ -4,6 +4,7 @@
 #include "SniperKernel/ToolBase.h"
 
 #include "EventTagSvc/EventTagSvc.h"
+#include "EventTagSvc/TimeUtils.h"
 #include "EvtNavigator/NavBuffer.h"
 #include "EvtNavigator/EvtNavHelper.h"
 
@@ -16,7 +17,6 @@
 class SpalNeutronSelectionTool: public ToolBase
 {
 private:
-    // JM::NavBuffer* m_buf;
     JM::CdLpmtCalibEvt* m_calibevt;
     JM::CdVertexRecEvt* m_recevt;
     JM::OecEvt* m_oecevt;
