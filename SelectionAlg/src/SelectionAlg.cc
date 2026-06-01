@@ -307,28 +307,30 @@ bool SelectionAlg::execute()
 		
 		dt_skip = deltaT_ns(theTime, skipStartTime);
 
-		bool skip1 = (skipReason == SkipReason::StartOfFile || skipReason == SkipReason::BigGap) && dt_skip < 1.2e9; //1.2 s skip if Start of file of big gap
-		bool skip2 = skipReason == SkipReason::MissingHeader && dt_skip < 5e6; // 5 ms skip if no headers
+		bool skip1 = (skipReason == SkipReason::StartOfFile || skipReason == SkipReason::BigGap) && dt_skip < 1'200'000'000LL; //1.2 s skip if Start of file of big gap
+		bool skip2 = skipReason == SkipReason::MissingHeader && dt_skip < 5'000'000LL; // 5 ms skip if no headers
 
 		if(skip1 || skip2){
 			PreviousTime = theTime;
 			return true;
 		}
 
+		prevCDTime = theTime;
+		prevWPTime = theTime;
+		dtCD = 0;
+		dtWP = 0;
 		skipReason = SkipReason::None;
+		
 	}
 
 	// =============  Compute dt  =============
 
 	int64_t globalTime = deltaT_ns(theTime, FirstTime);
-
-	int64_t dt = deltaT_ns(theTime, PreviousTime);
-	int64_t dtLastMuon = deltaT_ns(theTime, tLastMuon);
-
 	LogInfo << "Global time: " << globalTime << std::endl;
 
+	int64_t dt 		   = deltaT_ns(theTime, PreviousTime);
+	int64_t dtLastMuon = deltaT_ns(theTime, tLastMuon);
 
-	
 	// =============  Check	for missing headers  =============
 	
 	auto calibheaderWP = JM::getHeaderObject<JM::WpCalibHeader>(nav);
@@ -347,7 +349,7 @@ bool SelectionAlg::execute()
 	
 	if(calibheaderLPMT){
 		if(dtCD == 0) dtCD = deltaT_ns(theTime, PreviousTime);
-		else dtCD = deltaT_ns(theTime, prevCDTime);
+		else 		  dtCD = deltaT_ns(theTime, prevCDTime);
 		
 		LogDebug << "dtCD: " << dtCD << std::endl;
 		prevCDTime = theTime;
@@ -362,7 +364,7 @@ bool SelectionAlg::execute()
 	}
 	if(calibheaderWP){
 		if(dtWP == 0) dtWP = deltaT_ns(theTime, PreviousTime);
-		else dtWP = deltaT_ns(theTime, prevWPTime);
+		else 		  dtWP = deltaT_ns(theTime, prevWPTime);
 		
 		LogDebug << "dtWP: " << dtWP << std::endl;
 		prevWPTime = theTime;
@@ -404,7 +406,7 @@ bool SelectionAlg::execute()
 
 	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
-	if(dtLastMuon * 1e-3 > 50.0 && m_MuClassifier->isMuon(nav)){ //50 us dead time
+	if(dtLastMuon * 1e-3 > 50.0 && m_MuClassifier->isMuon(nav)){ //50 us gap time
 		tLastMuon = theTime;
 		m_Tag = m_eventTagsvc->getTag(nav);
 		if(m_Tag == "CDMuon") nCDMuons++;
