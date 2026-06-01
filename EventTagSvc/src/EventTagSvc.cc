@@ -69,7 +69,7 @@ std::string EventTagSvc::getTag(JM::EvtNavigator* nav) {
     auto it = m_tags.find(key);
     if (it != m_tags.end()) return it->second;
     
-    LogInfo << "Tag not found." << std::endl;
+    LogDebug << "Tag not found." << std::endl;
     return "";
 }
 
