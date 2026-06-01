@@ -404,7 +404,7 @@ bool SelectionAlg::execute()
 
 	LogInfo << "dtLastMuon: " << dtLastMuon << std::endl;
 
-	if(dtLastMuon * 1e-6 > 50.0 && m_MuClassifier->isMuon(nav)){ //50 us dead time
+	if(dtLastMuon * 1e-3 > 50.0 && m_MuClassifier->isMuon(nav)){ //50 us dead time
 		tLastMuon = theTime;
 		m_Tag = m_eventTagsvc->getTag(nav);
 		if(m_Tag == "CDMuon") nCDMuons++;
