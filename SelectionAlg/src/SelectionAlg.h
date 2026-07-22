@@ -168,7 +168,7 @@ private :
 
 
   TVector3 NeutronVertex; 
-  TTimeStamp NeutronTime = NULL;
+  TTimeStamp NeutronTime{0,0};
 
   TTree *m_ntuple1; // event tree
   int m_NeutronVeto;
