@@ -75,8 +75,8 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
     const TTimeStamp& ttime = tOecEvt->getTime();
 
     JM::NavBuffer::Iterator it = navit - 1;
-    while (navit != m_buf->begin() && it != m_buf->begin()) {
-        
+    while (it != m_buf->begin()) {
+        --it;
         std::string thisTag = m_eventTagSvc->getTag(it->get());
         
         JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
@@ -84,7 +84,6 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
         JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
         if(!bOecEvt){
             LogInfo << "Could not load OecEvt" << std::endl;
-            --it;
             continue;
         }
         const TTimeStamp& btime = bOecEvt->getTime();
@@ -96,7 +95,6 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
         else if (thisTag == "WPMuon" || thisTag == "CDMuon" || thisTag == "CDWPMuon"){
             return true;
         }
-        --it;
     }
 
     return false;
@@ -145,13 +143,14 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
 
         //look for WP Muon before (500 ns)
         LogInfo << "Searching WP correlation 500 ns before" << std::endl;
-        JM::NavBuffer::Iterator it = navit - 1;
-        while(navit != m_buf->begin() && it != m_buf->begin()){
+        JM::NavBuffer::Iterator it = navit;
+        while(it != m_buf->begin()){
+            --it;
             
             JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-            if(!bOecHdr) { --it; continue; }
+            if(!bOecHdr) {continue; }
             JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
-            if(!bOecEvt) { --it; continue; }
+            if(!bOecEvt) {continue; }
             
             auto bWpHdr = JM::getHeaderObject<JM::WpCalibHeader>(it->get()); 
             
@@ -167,18 +166,17 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
                 return true;
             }
             
-            --it;
         }
 
         //look for WP Muon after (500 ns)
         LogInfo << "Searching WP correlation 500 ns after" << std::endl;
-        it = navit + 1;
-        while( navit != m_buf->end() && it != m_buf->end()){
-            
+        it = navit;
+        while(it != m_buf->end()){
+            ++it;
             auto aOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-            if(!aOecHdr) { ++it; continue; }
+            if(!aOecHdr) { continue; }
             JM::OecEvt* aOecEvt = dynamic_cast<JM::OecEvt*>(aOecHdr->event("JM::OecEvt"));
-            if(!aOecEvt) { ++it; continue; }
+            if(!aOecEvt) { continue; }
 
             auto aWpHdr = JM::getHeaderObject<JM::WpCalibHeader>(it->get()); 
             
@@ -193,7 +191,6 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
                 m_eventTagSvc->addTag(nav, "CDWPMuon");
                 return true;
             }
-            ++it;
         }
         
 
