@@ -13,7 +13,7 @@ IBDSelectionTool::IBDSelectionTool(const std::string& name)
     declProp("recEDMPath", recEDMPath="/Event/CdVertexRec");
     declProp("FiducialVolume", FV_cut); // Fiducial volume cut: 17.2 m default
     
-    PromptEnergyCut[0] = 0.7; PromptEnergyCut[1] = 12.0;
+    PromptEnergyCut[0] = 0.6; PromptEnergyCut[1] = 15.0; // wider range - reduce at analysis level
     PromptChargeCut[0] = 1500; PromptChargeCut[1] = 21000;
     DelayEnergyCut[0] = 2.0; DelayEnergyCut[1] = 2.5;
     DelayChargeCut[0] = 4000; DelayChargeCut[1] = 6000;
@@ -99,6 +99,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
                 continue;
             }
             JM::CdVertexRecEvt* recevt = rechdr->event();
+            if(!recevt || recevt->nVertices() == 0) return false;
     
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
@@ -129,6 +130,8 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
         }
 
         JM::CdVertexRecEvt* recevt = rechdr->event();
+        if(!recevt || recevt->nVertices() == 0) return false;
+
         const auto& vertex = recevt->getVertex(0);
         float energy = vertex->energy();
         
@@ -159,6 +162,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
             if(!rechdr) continue;
             JM::CdVertexRecEvt* recevt = rechdr->event();
+            if(!recevt || recevt->nVertices() == 0) return false;
     
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
@@ -210,6 +214,8 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
     if(!rechdr) return false;
     m_recevt = rechdr->event();
+    if(!m_recevt || m_recevt->nVertices() == 0) return false;
+
 
     const auto vertex = m_recevt->getVertex(0);
     pEnergy = vertex->energy();
@@ -253,6 +259,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
                 continue;
             }
             JM::CdVertexRecEvt* dRecEvt = dRecHdr->event();
+            if(!dRecEvt || dRecEvt->nVertices() == 0) return false;
             
             const auto avertex = dRecEvt->getVertex(0);
             dEnergy = avertex->energy();
@@ -291,11 +298,13 @@ bool IBDSelectionTool::isNeutronVetoed(JM::EvtNavigator* nav){
     auto prechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(nav, recEDMPath);
     if(!prechdr) return false;
     m_recevt = prechdr->event();
+    if(!m_recevt || m_recevt->nVertices() == 0) return false;
 
     const auto vertex = m_recevt->getVertex(0); // Assumes 1 vertex per event (might be false)
     TVector3 p_vertex(vertex->x(), vertex->y(), vertex->z());
 
     JM::NavBuffer::Iterator navit = m_buf->find(nav);
+    if(navit == m_buf->end() || navit == m_buf->begin()) return false;
 
     for(JM::NavBuffer::Iterator it = navit - 1; it != m_buf->begin(); --it) {
         

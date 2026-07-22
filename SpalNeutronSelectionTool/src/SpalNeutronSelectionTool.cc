@@ -86,6 +86,7 @@ bool SpalNeutronSelectionTool::isSpalNeutron(JM::EvtNavigator* nav){
         return false;
     }
     m_recevt = rechdr->event();
+    if(!m_recevt || m_recevt->nVertices() == 0) return false;
     
     float recenergy = 0.0;
     float reccharge = 0.0;
