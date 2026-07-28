@@ -6,6 +6,8 @@
 #include "EvtNavigator/NavBuffer.h"
 
 #include <vector>
+
+#include "TSystem.h"
 #include "TTree.h"
 #include "TFile.h"
 #include "TString.h"
@@ -101,6 +103,7 @@ private :
   bool saveElec, saveSim, saveHitInfo;
   int interface;
   std::string recEDMPath, filename;
+  TString prevname = "Init";
 
   JM::NavBuffer* m_buf;
 

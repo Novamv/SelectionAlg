@@ -235,8 +235,14 @@ bool SelectionAlg::execute()
 {
 	++m_iEvt;
 	LogInfo << "executing: " << m_iEvt << std::endl;
-
-	// gDirectory->pwd();
+	
+	TString fullpath = gDirectory->GetFile()->GetName();
+	prevname = gSystem->BaseName(fullpath);
+	if (prevname != m_fname){
+		// gDirectory->pwd();
+		m_fname = prevname;
+		std::cout << "Current File: " << m_fname << std::endl;
+ 	}
 
 //      JM::EvtNavigator* navig = 0;
 	JM::SimEvt* simevent = 0;
@@ -858,6 +864,7 @@ bool SelectionAlg::Book_tree()
 
 	// ============= IBD Pair Tree =============
 	m_ibdtree = svc->bookTree(*m_par, "Data/ibd", "IBD pair events");
+	m_ibdtree->Branch("Filename",    &m_fname);
 	m_ibdtree->Branch("RunNb", 		 &m_pair.runNumber);
 	m_ibdtree->Branch("dt", 		 &m_pair.dt_ns);
 	m_ibdtree->Branch("dR", 		 &m_pair.dR_mm);
