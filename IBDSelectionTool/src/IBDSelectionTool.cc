@@ -13,7 +13,7 @@ IBDSelectionTool::IBDSelectionTool(const std::string& name)
     declProp("recEDMPath", recEDMPath="/Event/CdVertexRec");
     declProp("FiducialVolume", FV_cut); // Fiducial volume cut: 17.2 m default
     
-    PromptEnergyCut[0] = 0.6; PromptEnergyCut[1] = 15.0; // wider range - reduce at analysis level
+    PromptEnergyCut[0] = 0.7; PromptEnergyCut[1] = 12.0;
     PromptChargeCut[0] = 1500; PromptChargeCut[1] = 21000;
     DelayEnergyCut[0] = 2.0; DelayEnergyCut[1] = 2.5;
     DelayChargeCut[0] = 4000; DelayChargeCut[1] = 6000;

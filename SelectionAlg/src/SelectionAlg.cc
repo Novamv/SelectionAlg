@@ -747,8 +747,10 @@ bool SelectionAlg::execute()
 				TVector3 pVtx(it->pX, it->pY, it->pZ);
                 TVector3 dVtx(m_RecX, m_RecY, m_RecZ);
 
-				m_pair.dt_ns = dt_since_prompt;
-				m_pair.dR_mm = (float)(pVtx - dVtx).Mag();
+				m_pair.runNumber   = m_iRun;
+
+				m_pair.dt_ns 	   = dt_since_prompt;
+				m_pair.dR_mm 	   = (float)(pVtx - dVtx).Mag();
 				
 				m_pair.promptEntry = it->promptEntry;
 				m_pair.pEnergy     = it->pEnergy;
