@@ -74,13 +74,13 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
     JM::NavBuffer::Iterator navit = m_buf->find(nav);
     const TTimeStamp& ttime = tOecEvt->getTime();
 
-    JM::NavBuffer::Iterator it = navit - 1;
+    JM::NavBuffer::Iterator it = navit;
     while (it != m_buf->begin()) {
         --it;
         std::string thisTag = m_eventTagSvc->getTag(it->get());
         
         JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
-        if(!bOecHdr) { --it; continue; }
+        if(!bOecHdr) continue;
         JM::OecEvt* bOecEvt = dynamic_cast<JM::OecEvt*>(bOecHdr->event("JM::OecEvt"));
         if(!bOecEvt){
             LogInfo << "Could not load OecEvt" << std::endl;
@@ -173,6 +173,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
         it = navit;
         while(it != m_buf->end()){
             ++it;
+            if(it == m_buf->end()) break;
             auto aOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
             if(!aOecHdr) { continue; }
             JM::OecEvt* aOecEvt = dynamic_cast<JM::OecEvt*>(aOecHdr->event("JM::OecEvt"));
@@ -183,7 +184,6 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
             float wpcharge = aOecEvt->getTotalCharge();
             const TTimeStamp& atime = aOecEvt->getTime();
             int64_t dtime = deltaT_ns(atime, ttime);
-            
             
             if(dtime > 500) break;
             else if (aWpHdr && wpcharge > 400) {
