@@ -236,13 +236,12 @@ bool SelectionAlg::execute()
 	++m_iEvt;
 	LogInfo << "executing: " << m_iEvt << std::endl;
 	
-	TString fullpath = gDirectory->GetFile()->GetName();
-	prevname = gSystem->BaseName(fullpath);
-	if (prevname != m_fname){
-		// gDirectory->pwd();
-		m_fname = prevname;
+	TFile* f = gDirectory ? gDirectory->GetFile() : nullptr;
+	if (f) {
+		prevname = gSystem->BaseName(f->GetName());
+		if (prevname != m_fname) { m_fname = prevname; }
 		std::cout << "Current File: " << m_fname << std::endl;
- 	}
+	}
 
 //      JM::EvtNavigator* navig = 0;
 	JM::SimEvt* simevent = 0;

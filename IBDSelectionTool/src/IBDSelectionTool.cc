@@ -99,7 +99,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
                 continue;
             }
             JM::CdVertexRecEvt* recevt = rechdr->event();
-            if(!recevt || recevt->nVertices() == 0) return false;
+            if(!recevt || recevt->nVertices() == 0) continue;
     
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
@@ -130,7 +130,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
         }
 
         JM::CdVertexRecEvt* recevt = rechdr->event();
-        if(!recevt || recevt->nVertices() == 0) return false;
+        if(!recevt || recevt->nVertices() == 0) continue;
 
         const auto& vertex = recevt->getVertex(0);
         float energy = vertex->energy();
@@ -155,6 +155,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             JM::OecEvt* oecevt = dynamic_cast<JM::OecEvt*>(oechdr->event("JM::OecEvt"));
             if(!oecevt){
                 LogInfo << "Could not load OecEvt" << std::endl;
+                continue;
             }
             const TTimeStamp& time = oecevt->getTime();
             int64_t dt = deltaT_ns(time, dtime);
@@ -162,7 +163,7 @@ bool IBDSelectionTool::isIsolated(JM::EvtNavigator* pnav, JM::EvtNavigator* dnav
             auto rechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(it->get(), recEDMPath);
             if(!rechdr) continue;
             JM::CdVertexRecEvt* recevt = rechdr->event();
-            if(!recevt || recevt->nVertices() == 0) return false;
+            if(!recevt || recevt->nVertices() == 0) continue;
     
             const auto& vertex = recevt->getVertex(0);
             float energy = vertex->energy();
@@ -229,9 +230,10 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
     LogInfo << "Prompt IBD Candidate: " << nav << std::endl;
     LogInfo << " - energy: " << pEnergy << " r: " << pVertex.Mag() << " z: " << pVertex.Z() << " rho: " << pVertex.Perp() << std::endl;
 
-    if(energy_cut && position_cut /*&& charge_cut*/){
+    JM::NavBuffer::Iterator navit = m_buf->find(nav);
 
-        JM::NavBuffer::Iterator navit = m_buf->find(nav);
+    if(energy_cut && position_cut && navit != m_buf->end() /*&& charge_cut*/){
+
         int offset = 0;
         for(JM::NavBuffer::Iterator it = navit + 1; it != m_buf->end(); ++it) {
 
@@ -259,7 +261,7 @@ bool IBDSelectionTool::isPrompt(JM::EvtNavigator* nav){
                 continue;
             }
             JM::CdVertexRecEvt* dRecEvt = dRecHdr->event();
-            if(!dRecEvt || dRecEvt->nVertices() == 0) return false;
+            if(!dRecEvt || dRecEvt->nVertices() == 0) continue;
             
             const auto avertex = dRecEvt->getVertex(0);
             dEnergy = avertex->energy();
@@ -323,6 +325,7 @@ bool IBDSelectionTool::isNeutronVetoed(JM::EvtNavigator* nav){
         auto nrechdr = JM::getHeaderObject<JM::CdVertexRecHeader>(candidate, recEDMPath);
         if(!nrechdr) return false;
         JM::CdVertexRecEvt* nrecevt = nrechdr->event();
+        if(!nrecevt || nrecevt->nVertices() == 0) continue;
 
         const auto nVtx = nrecevt->getVertex(0); 
         TVector3 n_vertex(nVtx->x(), nVtx->y(), nVtx->z());

@@ -25,20 +25,19 @@ bool EventTagSvc::finalize() {
     return true;
 }
 
+//----------------------------------
+// Cleanup vectors to free up some 
+// memory on large runs
+//----------------------------------
 void EventTagSvc::CleanupTags(const TTimeStamp& currentTime){
-
     while(!m_tagTimes.empty()){
         int64_t age = deltaT_ns(currentTime, m_tagTimes.front());
-        if(age < 0){
-            m_tagTimes.pop_front();
-            continue;
-        }
-        if(age <= 2'000'000'000LL) break; // if dt < 2s don't clean
-
-        m_tags.erase(toKey(m_tagTimes.front()));
+        if(age <= 2'000'000'000LL && age >= 0) break;
+        m_tags.erase(toKey(m_tagTimes.front()));   // always erase together
         m_tagTimes.pop_front();
     }
 }
+
 
 void EventTagSvc::addTag(JM::EvtNavigator* nav, const std::string& tag) {
     const TTimeStamp& TS(nav->TimeStamp());

@@ -72,11 +72,11 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
 
     //Get NavBuffer Iterator
     JM::NavBuffer::Iterator navit = m_buf->find(nav);
+    if(navit == m_buf->begin()) return false;
     const TTimeStamp& ttime = tOecEvt->getTime();
 
-    JM::NavBuffer::Iterator it = navit;
+    JM::NavBuffer::Iterator it = navit - 1;
     while (it != m_buf->begin()) {
-        --it;
         std::string thisTag = m_eventTagSvc->getTag(it->get());
         
         JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
@@ -95,6 +95,7 @@ bool MuonClassificationTool::isVetoed(JM::EvtNavigator* nav, JM::OecEvt* tOecEvt
         else if (thisTag == "WPMuon" || thisTag == "CDMuon" || thisTag == "CDWPMuon"){
             return true;
         }
+        --it;
     }
 
     return false;
@@ -111,6 +112,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
 
     //Get NavBuffer Iterator
     JM::NavBuffer::Iterator navit = m_buf->find(nav);
+    if(navit == m_buf->begin() || navit == m_buf->end()) return false;
 
     JM::OecHeader* oechdr = JM::getHeaderObject<JM::OecHeader>(nav);
     if(!oechdr) return false;
@@ -143,9 +145,7 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
 
         //look for WP Muon before (500 ns)
         LogInfo << "Searching WP correlation 500 ns before" << std::endl;
-        JM::NavBuffer::Iterator it = navit;
-        while(it != m_buf->begin()){
-            --it;
+        for (JM::NavBuffer::Iterator it = navit - 1; it != m_buf->begin(); it--){
             
             JM::OecHeader* bOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
             if(!bOecHdr) {continue; }
@@ -165,14 +165,12 @@ bool MuonClassificationTool::isMuon(JM::EvtNavigator* nav) {
                 m_eventTagSvc->addTag(nav, "CDWPMuon");
                 return true;
             }
-            
         }
 
         //look for WP Muon after (500 ns)
         LogInfo << "Searching WP correlation 500 ns after" << std::endl;
         it = navit;
-        while(it != m_buf->end()){
-            ++it;
+        for (JM::NavBuffer::Iterator it = navit + 1; it != m_buf->end(); it++){
             if(it == m_buf->end()) break;
             auto aOecHdr = JM::getHeaderObject<JM::OecHeader>(it->get());
             if(!aOecHdr) { continue; }
