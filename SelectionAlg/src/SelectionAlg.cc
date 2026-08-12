@@ -239,8 +239,10 @@ bool SelectionAlg::execute()
 	TFile* f = gDirectory ? gDirectory->GetFile() : nullptr;
 	if (f) {
 		prevname = gSystem->BaseName(f->GetName());
-		if (prevname != m_fname) { m_fname = prevname; }
-		std::cout << "Current File: " << m_fname << std::endl;
+		if (prevname != m_fname) { 
+			m_fname = prevname; 
+			std::cout << "Current File: " << m_fname << std::endl;
+		}
 	}
 
 //      JM::EvtNavigator* navig = 0;
